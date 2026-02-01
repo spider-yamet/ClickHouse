@@ -15,9 +15,15 @@
 #include <Parsers/Kusto/ParserKQLQuery.h>
 #include <Parsers/Kusto/ParserKQLStatement.h>
 #include <Parsers/ParserSetQuery.h>
+#include <Common/Exception.h>
 #include <boost/lexical_cast.hpp>
 
 #include <fmt/format.h>
+
+namespace DB::ErrorCodes
+{
+extern const int BAD_ARGUMENTS;
+}
 
 namespace DB
 {
@@ -38,6 +44,9 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
 
     //remove sapce between minus and number
     round_to.erase(std::remove_if(round_to.begin(), round_to.end(), isspace), round_to.end());
+
+    if (round_to.empty())
+        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
 
     auto t = fmt::format("toFloat64({})", value);
 
@@ -77,6 +86,9 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
 
     ++pos;
     String fixed_point_str = getConvertedArgument(fn_name, pos);
+
+    if (bin_size_str.empty())
+        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
 
     auto t1 = fmt::format("toFloat64({})", fixed_point_str);
     auto t2 = fmt::format("toFloat64({})", expression_str);

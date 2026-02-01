@@ -126,7 +126,10 @@ bool Extract::convertImpl(String & out, IParser::Pos & pos)
     String regex = getConvertedArgument(fn_name, pos);
 
     ++pos;
-    size_t capture_group = stoi(getConvertedArgument(fn_name, pos));
+    String capture_group_str = getConvertedArgument(fn_name, pos);
+    if (capture_group_str.empty())
+        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty capture group argument", fn_name);
+    size_t capture_group = stoi(capture_group_str);
 
     ++pos;
     String source = getConvertedArgument(fn_name, pos);
@@ -343,17 +346,26 @@ bool IndexOf::convertImpl(String & out, IParser::Pos & pos)
     if (pos->type == TokenType::Comma)
     {
         ++pos;
-        start_index = stoi(getConvertedArgument(fn_name, pos));
+        String start_index_str = getConvertedArgument(fn_name, pos);
+        if (start_index_str.empty())
+            throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty start index argument", fn_name);
+        start_index = stoi(start_index_str);
 
         if (pos->type == TokenType::Comma)
         {
             ++pos;
-            length = stoi(getConvertedArgument(fn_name, pos));
+            String length_str = getConvertedArgument(fn_name, pos);
+            if (length_str.empty())
+                throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty length argument", fn_name);
+            length = stoi(length_str);
 
             if (pos->type == TokenType::Comma)
             {
                 ++pos;
-                occurrence = stoi(getConvertedArgument(fn_name, pos));
+                String occurrence_str = getConvertedArgument(fn_name, pos);
+                if (occurrence_str.empty())
+                    throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty occurrence argument", fn_name);
+                occurrence = stoi(occurrence_str);
             }
         }
     }
