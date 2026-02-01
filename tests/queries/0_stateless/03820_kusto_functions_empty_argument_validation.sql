@@ -8,24 +8,24 @@ SET dialect = 'kusto';
 
 -- Test bin() function with empty bin size argument
 -- Expected: Should throw SYNTAX_ERROR exception (invalid syntax), not crash
-print bin(4.5,,); -- { serverError SYNTAX_ERROR }
+print bin(4.5,,); -- { clientError SYNTAX_ERROR }
 
 -- Test bin_at() function with empty bin size argument  
 -- Expected: Should throw SYNTAX_ERROR exception (invalid syntax), not crash
-print bin_at(datetime(2017-05-15 10:20:00.0), 10.5,, 5.0); -- { serverError SYNTAX_ERROR }
+print bin_at(datetime(2017-05-15 10:20:00.0), 10.5,, 5.0); -- { clientError SYNTAX_ERROR }
 
 -- Test extract() function with empty capture group argument
 -- Expected: Should throw SYNTAX_ERROR exception (invalid syntax), not crash
-print extract("User: ([^,]+)",, "User: James, Email: James@example.com, Age: 29"); -- { serverError SYNTAX_ERROR }
+print extract("User: ([^,]+)",, "User: James, Email: James@example.com, Age: 29"); -- { clientError SYNTAX_ERROR }
 
 -- Test indexof() function with empty start_index argument
 -- Expected: Should throw SYNTAX_ERROR exception (invalid syntax), not crash
-print indexof("hello world", "world",,); -- { serverError SYNTAX_ERROR }
+print indexof("hello world", "world",,); -- { clientError SYNTAX_ERROR }
 
 -- Test indexof() function with empty length argument
 -- Expected: Should throw SYNTAX_ERROR exception (invalid syntax), not crash
-print indexof("hello world", "world", 0,,); -- { serverError SYNTAX_ERROR }
+print indexof("hello world", "world", 0,,); -- { clientError SYNTAX_ERROR }
 
 -- Test indexof() function with empty occurrence argument
 -- Expected: Should throw SYNTAX_ERROR exception (invalid syntax), not crash
-print indexof("hello world", "world", 0, 11,,); -- { serverError SYNTAX_ERROR }
+print indexof("hello world", "world", 0, 11,,); -- { clientError SYNTAX_ERROR }
