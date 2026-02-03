@@ -2694,8 +2694,6 @@ bool ClientBase::executeMultiQuery(const String & all_queries_text)
                 /// It's expected syntax error, skip the line
                 this_query_begin = this_query_end;
                 current_exception.reset();
-                have_error = false;
-                error_code = 0;
 
                 continue;
             }
