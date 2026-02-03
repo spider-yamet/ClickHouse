@@ -40,7 +40,7 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     String origal_expr(pos->begin, pos->end);
     String value = getConvertedArgument(fn_name, pos);
     if (value.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `bin()`shouldn't be empty.");
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` shouldn't be empty.", fn_name);
 
     ++pos;
     String round_to = getConvertedArgument(fn_name, pos);
@@ -49,7 +49,7 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     round_to.erase(std::remove_if(round_to.begin(), round_to.end(), isspace), round_to.end());
 
     if (round_to.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `bin()`shouldn't be empty.", fn_name);
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
 
     auto t = fmt::format("toFloat64({})", value);
 
@@ -57,7 +57,7 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
 
     // validate if bin_size is a positive number
     if (bin_size <= 0)
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `bin()`should be a positive number.", fn_name);
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` should be a positive number.", fn_name);
 
     if (origal_expr == "datetime" || origal_expr == "date")
     {
@@ -88,7 +88,7 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
     String origal_expr(pos->begin, pos->end);
     String expression_str = getConvertedArgument(fn_name, pos);
     if (expression_str.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `bin_at()`shouldn't be empty.", fn_name);
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
 
     ++pos;
     String bin_size_str = getConvertedArgument(fn_name, pos);
