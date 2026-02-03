@@ -39,6 +39,8 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     ++pos;
     String origal_expr(pos->begin, pos->end);
     String value = getConvertedArgument(fn_name, pos);
+    if (value.empty())
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `bin()`shouldn't be empty.");
 
     ++pos;
     String round_to = getConvertedArgument(fn_name, pos);
@@ -47,11 +49,15 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     round_to.erase(std::remove_if(round_to.begin(), round_to.end(), isspace), round_to.end());
 
     if (round_to.empty())
-        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `bin()`shouldn't be empty.");
 
     auto t = fmt::format("toFloat64({})", value);
 
     bin_size = std::stod(round_to);
+
+    // validate if bin_size is a positive number
+    if (bin_size <= 0)
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `bin()`should be a positive number.");
 
     if (origal_expr == "datetime" || origal_expr == "date")
     {
@@ -81,12 +87,16 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
     ++pos;
     String origal_expr(pos->begin, pos->end);
     String expression_str = getConvertedArgument(fn_name, pos);
+    if (expression_str.empty())
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `bin_at()`shouldn't be empty.");
 
     ++pos;
     String bin_size_str = getConvertedArgument(fn_name, pos);
 
     ++pos;
     String fixed_point_str = getConvertedArgument(fn_name, pos);
+    if (fixed_point_str.empty())
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty fixed point argument", fn_name);
 
     if (bin_size_str.empty())
         throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
