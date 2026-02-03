@@ -1,7 +1,7 @@
 -- Tags: no-fasttest
 -- Test for issue #95509: Kusto functions should validate empty arguments properly
 -- This test ensures that functions bin(), bin_at(), extract(), and indexof() 
--- throw proper exceptions instead of crashing when given empty arguments.
+-- throw proper exceptions instead of crashing when given empty arguments or invalid values.
 
 SET allow_experimental_kusto_dialect = 1;
 SET dialect = 'kusto';
@@ -10,9 +10,25 @@ SET dialect = 'kusto';
 -- Expected: Should throw SYNTAX_ERROR exception, not crash
 print bin(4.5,,); -- { clientError SYNTAX_ERROR }
 
+-- Test bin() function with zero bin size argument
+-- Expected: Should throw BAD_ARGUMENTS exception, not crash
+print bin(4.5, 0); -- { clientError BAD_ARGUMENTS }
+
+-- Test bin() function with negative bin size argument
+-- Expected: Should throw BAD_ARGUMENTS exception, not crash
+print bin(4.5, -1.5); -- { clientError BAD_ARGUMENTS }
+
 -- Test bin_at() function with empty bin size argument  
 -- Expected: Should throw BAD_ARGUMENTS exception, not crash
 print bin_at(datetime(2017-05-15 10:20:00.0), 10.5,, 5.0); -- { clientError BAD_ARGUMENTS }
+
+-- Test bin_at() function with zero bin size argument
+-- Expected: Should throw BAD_ARGUMENTS exception, not crash
+print bin_at(datetime(2017-05-15 10:20:00.0), 10.5, 0, 5.0); -- { clientError BAD_ARGUMENTS }
+
+-- Test bin_at() function with negative bin size argument
+-- Expected: Should throw BAD_ARGUMENTS exception, not crash
+print bin_at(datetime(2017-05-15 10:20:00.0), 10.5, -1.5, 5.0); -- { clientError BAD_ARGUMENTS }
 
 -- Test extract() function with empty capture group argument
 -- Expected: Should throw BAD_ARGUMENTS exception, not crash

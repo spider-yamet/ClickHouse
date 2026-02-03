@@ -57,7 +57,7 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
 
     // validate if bin_size is a positive number
     if (bin_size <= 0)
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` should be a positive number.", fn_name);
+        throw Exception(ErrorCodes::BAD_ARGUMENTS, "The second argument of `{}` should be a positive number.", fn_name);
 
     if (origal_expr == "datetime" || origal_expr == "date")
     {
@@ -105,6 +105,10 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
     auto t2 = fmt::format("toFloat64({})", expression_str);
     int dir = t2 >= t1 ? 0 : -1;
     bin_size = std::stod(bin_size_str);
+
+    // validate if bin_size is a positive number
+    if (bin_size <= 0)
+        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a positive bin size argument", fn_name);
 
     if (origal_expr == "datetime" || origal_expr == "date")
     {
