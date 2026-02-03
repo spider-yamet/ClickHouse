@@ -23,6 +23,7 @@ TestHint::TestHint(const std::string_view & query)
     // Don't parse error hints in leading comments, because it feels weird.
     // Leading 'echo' hint is OK.
     bool is_leading_hint = true;
+    bool lexer_found_comments = false;
 
     Lexer lexer(query.data(), query.data() + query.size());
 
@@ -35,6 +36,7 @@ TestHint::TestHint(const std::string_view & query)
         }
         else if (token.type == TokenType::Comment)
         {
+            lexer_found_comments = true;
             String comment(token.begin, token.begin + token.size());
 
             if (!comment.empty())
@@ -50,6 +52,56 @@ TestHint::TestHint(const std::string_view & query)
                     }
                 }
             }
+        }
+    }
+
+    // Fallback: If Lexer didn't find any comments (e.g., in KQL queries where Lexer
+    // may not recognize comment syntax), manually search for -- { ... } patterns.
+    if (!lexer_found_comments)
+    {
+        String query_str(query);
+        size_t query_pos = 0;
+
+        while (query_pos < query_str.size())
+        {
+            size_t comment_start = query_str.find("--", query_pos);
+            if (comment_start == String::npos)
+                break;
+
+            size_t after_dash = comment_start + 2;
+            if (after_dash < query_str.size())
+            {
+                char next_char = query_str[after_dash];
+                if (next_char == ' ' || next_char == '\t' || next_char == '{')
+                {
+                    // Check if we've seen non-whitespace before this comment to determine if it's leading
+                    bool is_leading_hint_fallback = true;
+                    for (size_t i = 0; i < comment_start; ++i)
+                    {
+                        char c = query_str[i];
+                        if (c != ' ' && c != '\t' && c != '\n' && c != '\r')
+                        {
+                            is_leading_hint_fallback = false;
+                            break;
+                        }
+                    }
+
+                    size_t brace_start = query_str.find('{', comment_start);
+                    if (brace_start != String::npos)
+                    {
+                        size_t brace_end = query_str.find('}', brace_start);
+                        if (brace_end != String::npos)
+                        {
+                            String hint_content = query_str.substr(brace_start + 1, brace_end - brace_start - 1);
+
+                            Lexer hint_lexer(hint_content.c_str(), hint_content.c_str() + hint_content.size(), 0);
+                            parse(hint_lexer, is_leading_hint_fallback);
+                        }
+                    }
+                }
+            }
+
+            query_pos = comment_start + 2;
         }
     }
 }
