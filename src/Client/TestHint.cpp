@@ -51,7 +51,7 @@ TestHint::TestHint(const std::string_view & query)
                     size_t pos_end = comment.find('}', pos_start);
                     if (pos_end != String::npos)
                     {
-                        bool is_leading = (first_non_whitespace_pos == std::string::npos) || 
+                        bool is_leading = (first_non_whitespace_pos == std::string::npos) ||
                                          (token.begin - query.data() < first_non_whitespace_pos);
                         Lexer comment_lexer(comment.c_str() + pos_start + 1, comment.c_str() + pos_end, 0);
                         parse(comment_lexer, is_leading);
