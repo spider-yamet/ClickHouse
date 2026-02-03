@@ -27,7 +27,6 @@ TestHint::TestHint(const std::string_view & query)
     // Try to use Lexer first (works for SQL queries)
     Lexer lexer(query.data(), query.data() + query.size());
     bool lexer_found_comments = false;
-    bool lexer_parsed_hints = false;
 
     for (Token token = lexer.nextToken(); !token.isEnd(); token = lexer.nextToken())
     {
@@ -54,21 +53,17 @@ TestHint::TestHint(const std::string_view & query)
                         bool is_leading = (first_non_whitespace_pos == std::string::npos) ||
                                          (token_pos < first_non_whitespace_pos);
                         Lexer comment_lexer(comment.c_str() + pos_start + 1, comment.c_str() + pos_end, 0);
-                        size_t old_server_errors = server_errors.size();
-                        size_t old_client_errors = client_errors.size();
                         parse(comment_lexer, is_leading);
-                        // Check if we actually parsed a hint (error codes were added)
-                        if (server_errors.size() > old_server_errors || client_errors.size() > old_client_errors)
-                            lexer_parsed_hints = true;
                     }
                 }
             }
         }
     }
 
-    // Fallback: If Lexer didn't find any comments OR didn't successfully parse hints
-    // (e.g., for KQL queries that confuse the SQL lexer), use simple string-based comment extraction
-    if (!lexer_found_comments || !lexer_parsed_hints)
+    // Fallback: Only run if Lexer didn't find any comments at all
+    // (e.g., for KQL queries that confuse the SQL lexer and prevent it from finding comments)
+    // If Lexer found comments (even if it didn't parse hints), trust it to avoid interfering with SQL queries
+    if (!lexer_found_comments)
     {
         String query_str(query);
         size_t pos = 0;
