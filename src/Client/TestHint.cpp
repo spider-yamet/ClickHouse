@@ -67,14 +67,14 @@ TestHint::TestHint(const std::string_view & query)
     {
         String query_str(query);
         size_t pos = 0;
-        
+
         // Find first non-whitespace character
         while (pos < query_str.size() && (query_str[pos] == ' ' || query_str[pos] == '\t' || query_str[pos] == '\n' || query_str[pos] == '\r'))
             pos++;
-        
+
         if (pos < query_str.size())
             first_non_whitespace_pos = pos;
-        
+
         // Now search for comments
         pos = 0;
         while (pos < query_str.size())
@@ -85,18 +85,18 @@ TestHint::TestHint(const std::string_view & query)
                 // Found a comment, extract it
                 size_t comment_start = pos;
                 pos += 2; // Skip "--"
-                
+
                 // Find the end of the line (or end of string)
                 size_t comment_end = pos;
                 while (comment_end < query_str.size() && query_str[comment_end] != '\n' && query_str[comment_end] != '\r')
                     comment_end++;
-                
+
                 String comment = query_str.substr(comment_start, comment_end - comment_start);
-                
+
                 // Check if this is a leading hint
-                bool is_leading = (first_non_whitespace_pos == std::string::npos) || 
+                bool is_leading = (first_non_whitespace_pos == std::string::npos) ||
                                  (comment_start < first_non_whitespace_pos);
-                
+
                 // Extract hint from comment
                 size_t hint_start = comment.find('{', 0);
                 if (hint_start != String::npos)
@@ -110,7 +110,7 @@ TestHint::TestHint(const std::string_view & query)
                         parse(comment_lexer, is_leading);
                     }
                 }
-                
+
                 pos = comment_end;
             }
             else
