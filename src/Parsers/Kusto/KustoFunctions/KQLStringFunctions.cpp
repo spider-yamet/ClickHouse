@@ -348,7 +348,7 @@ bool IndexOf::convertImpl(String & out, IParser::Pos & pos)
         ++pos;
         String start_index_str = getConvertedArgument(fn_name, pos);
         if (start_index_str.empty())
-            throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty start index argument", fn_name);
+            throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty start index argument", fn_name);
         start_index = stoi(start_index_str);
 
         if (pos->type == TokenType::Comma)
@@ -356,7 +356,7 @@ bool IndexOf::convertImpl(String & out, IParser::Pos & pos)
             ++pos;
             String length_str = getConvertedArgument(fn_name, pos);
             if (length_str.empty())
-                throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty length argument", fn_name);
+                throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty length argument", fn_name);
             length = stoi(length_str);
 
             if (pos->type == TokenType::Comma)
@@ -364,7 +364,7 @@ bool IndexOf::convertImpl(String & out, IParser::Pos & pos)
                 ++pos;
                 String occurrence_str = getConvertedArgument(fn_name, pos);
                 if (occurrence_str.empty())
-                    throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty occurrence argument", fn_name);
+                    throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty occurrence argument", fn_name);
                 occurrence = stoi(occurrence_str);
             }
         }

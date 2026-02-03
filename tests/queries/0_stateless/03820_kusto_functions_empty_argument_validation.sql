@@ -6,6 +6,10 @@
 SET allow_experimental_kusto_dialect = 1;
 SET dialect = 'kusto';
 
+-- Test bin() function with empty first argument
+-- Expected: Should throw SYNTAX_ERROR exception, not crash
+print bin(, 1.5); -- { clientError SYNTAX_ERROR }
+
 -- Test bin() function with empty bin size argument
 -- Expected: Should throw SYNTAX_ERROR exception, not crash
 print bin(4.5,,); -- { clientError SYNTAX_ERROR }
@@ -18,9 +22,17 @@ print bin(4.5, 0); -- { clientError BAD_ARGUMENTS }
 -- Expected: Should throw BAD_ARGUMENTS exception, not crash
 print bin(4.5, -1.5); -- { clientError BAD_ARGUMENTS }
 
+-- Test bin_at() function with empty expression argument
+-- Expected: Should throw SYNTAX_ERROR exception, not crash
+print bin_at(datetime(2017-05-15 10:20:00.0),, 10.5, 5.0); -- { clientError SYNTAX_ERROR }
+
 -- Test bin_at() function with empty bin size argument  
 -- Expected: Should throw BAD_ARGUMENTS exception, not crash
 print bin_at(datetime(2017-05-15 10:20:00.0), 10.5,, 5.0); -- { clientError BAD_ARGUMENTS }
+
+-- Test bin_at() function with empty fixed point argument
+-- Expected: Should throw SYNTAX_ERROR exception, not crash
+print bin_at(datetime(2017-05-15 10:20:00.0), 10.5, 1.5,); -- { clientError SYNTAX_ERROR }
 
 -- Test bin_at() function with zero bin size argument
 -- Expected: Should throw BAD_ARGUMENTS exception, not crash
