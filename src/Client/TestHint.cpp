@@ -22,7 +22,6 @@ TestHint::TestHint(const std::string_view & query)
 {
     // Don't parse error hints in leading comments, because it feels weird.
     // Leading 'echo' hint is OK.
-    bool is_leading_hint = true;
     size_t first_non_whitespace_pos = std::string::npos;
 
     // Try to use Lexer first (works for SQL queries)
@@ -34,9 +33,8 @@ TestHint::TestHint(const std::string_view & query)
         if (token.type != TokenType::Comment
             && token.type != TokenType::Whitespace)
         {
-            is_leading_hint = false;
             if (first_non_whitespace_pos == std::string::npos)
-                first_non_whitespace_pos = token.begin - query.data();
+                first_non_whitespace_pos = static_cast<size_t>(token.begin - query.data());
         }
         else if (token.type == TokenType::Comment)
         {
@@ -51,8 +49,9 @@ TestHint::TestHint(const std::string_view & query)
                     size_t pos_end = comment.find('}', pos_start);
                     if (pos_end != String::npos)
                     {
+                        size_t token_pos = static_cast<size_t>(token.begin - query.data());
                         bool is_leading = (first_non_whitespace_pos == std::string::npos) ||
-                                         (token.begin - query.data() < first_non_whitespace_pos);
+                                         (token_pos < first_non_whitespace_pos);
                         Lexer comment_lexer(comment.c_str() + pos_start + 1, comment.c_str() + pos_end, 0);
                         parse(comment_lexer, is_leading);
                     }
