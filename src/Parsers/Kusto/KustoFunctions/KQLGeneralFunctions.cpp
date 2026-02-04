@@ -18,6 +18,8 @@
 #include <Common/Exception.h>
 #include <boost/lexical_cast.hpp>
 
+#include <algorithm>
+#include <cctype>
 #include <fmt/format.h>
 
 namespace DB::ErrorCodes
@@ -53,7 +55,7 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
 
     String round_to = getConvertedArgument(fn_name, pos);
 
-    //remove sapce between minus and number
+    //remove space between minus and number
     round_to.erase(std::remove_if(round_to.begin(), round_to.end(), isspace), round_to.end());
 
     if (round_to.empty())
@@ -61,7 +63,14 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
 
     auto t = fmt::format("toFloat64({})", value);
 
-    bin_size = std::stod(round_to);
+    try
+    {
+        bin_size = std::stod(round_to);
+    }
+    catch (const std::exception &)
+    {
+        throw Exception(ErrorCodes::BAD_ARGUMENTS, "The second argument of `{}` should be a valid number.", fn_name);
+    }
 
     // validate if bin_size is a positive number
     if (bin_size <= 0)
@@ -94,7 +103,7 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
 
     ++pos;
     String origal_expr(pos->begin, pos->end);
-    // Check if the first argument is missing
+
     if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` shouldn't be empty.", fn_name);
 
@@ -103,7 +112,7 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` shouldn't be empty.", fn_name);
 
     ++pos;
-    // Check if the second argument is missing (could be 3-arg or 4-arg form)
+
     if (pos->type == TokenType::Comma)
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
     if (pos->type == TokenType::ClosingRoundBracket)
@@ -126,18 +135,17 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
 
     ++pos;
     // Determine if this is 3-arg or 4-arg form
-    String expression_str, bin_size_str, fixed_point_str;
+    String expression_str;
+    String bin_size_str;
+    String fixed_point_str;
     if (pos->type == TokenType::ClosingRoundBracket)
     {
-        // 3-argument form: bin_at(expression, bin_size, fixed_point)
         expression_str = first_arg;
         bin_size_str = second_arg;
         fixed_point_str = third_arg;
     }
     else
     {
-        // 4-argument form: bin_at(type_expr, expression, bin_size, fixed_point)
-        // Check if the fourth argument is missing
         if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
             throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty fixed point argument", fn_name);
 
@@ -153,7 +161,15 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
     auto t1 = fmt::format("toFloat64({})", fixed_point_str);
     auto t2 = fmt::format("toFloat64({})", expression_str);
     int dir = t2 >= t1 ? 0 : -1;
-    bin_size = std::stod(bin_size_str);
+
+    try
+    {
+        bin_size = std::stod(bin_size_str);
+    }
+    catch (const std::exception &)
+    {
+        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a valid numeric bin size argument", fn_name);
+    }
 
     // validate if bin_size is a positive number
     if (bin_size <= 0)
