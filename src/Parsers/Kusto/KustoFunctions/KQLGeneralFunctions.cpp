@@ -94,34 +94,61 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
 
     ++pos;
     String origal_expr(pos->begin, pos->end);
+    // Check if the first argument is missing
+    if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` shouldn't be empty.", fn_name);
+
     String first_arg = getConvertedArgument(fn_name, pos);
     if (first_arg.empty())
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` shouldn't be empty.", fn_name);
 
     ++pos;
-    if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
+    // Check if the second argument is missing (could be 3-arg or 4-arg form)
+    if (pos->type == TokenType::Comma)
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
+    if (pos->type == TokenType::ClosingRoundBracket)
+        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
 
-    String expression_str = getConvertedArgument(fn_name, pos);
-    if (expression_str.empty())
+    String second_arg = getConvertedArgument(fn_name, pos);
+    if (second_arg.empty())
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
 
     ++pos;
-    if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
+    // Check if the third argument is missing
+    if (pos->type == TokenType::Comma)
+        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
+    if (pos->type == TokenType::ClosingRoundBracket)
         throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
 
-    String bin_size_str = getConvertedArgument(fn_name, pos);
+    String third_arg = getConvertedArgument(fn_name, pos);
+    if (third_arg.empty())
+        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
 
     ++pos;
-    if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty fixed point argument", fn_name);
+    // Determine if this is 3-arg or 4-arg form
+    String expression_str, bin_size_str, fixed_point_str;
+    if (pos->type == TokenType::ClosingRoundBracket)
+    {
+        // 3-argument form: bin_at(expression, bin_size, fixed_point)
+        expression_str = first_arg;
+        bin_size_str = second_arg;
+        fixed_point_str = third_arg;
+    }
+    else
+    {
+        // 4-argument form: bin_at(type_expr, expression, bin_size, fixed_point)
+        // Check if the fourth argument is missing
+        if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
+            throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty fixed point argument", fn_name);
 
-    String fixed_point_str = getConvertedArgument(fn_name, pos);
-    if (fixed_point_str.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty fixed point argument", fn_name);
+        String fourth_arg = getConvertedArgument(fn_name, pos);
+        if (fourth_arg.empty())
+            throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty fixed point argument", fn_name);
 
-    if (bin_size_str.empty())
-        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
+        expression_str = second_arg;
+        bin_size_str = third_arg;
+        fixed_point_str = fourth_arg;
+    }
 
     auto t1 = fmt::format("toFloat64({})", fixed_point_str);
     auto t2 = fmt::format("toFloat64({})", expression_str);
