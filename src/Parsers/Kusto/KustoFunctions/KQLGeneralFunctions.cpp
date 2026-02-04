@@ -94,13 +94,11 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
 
     ++pos;
     String origal_expr(pos->begin, pos->end);
-    // Get and validate first argument (type expression like datetime(...))
     String first_arg = getConvertedArgument(fn_name, pos);
     if (first_arg.empty())
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` shouldn't be empty.", fn_name);
 
     ++pos;
-    // Check if the second argument (expression) is missing
     if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
 
@@ -109,14 +107,12 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
 
     ++pos;
-    // Check if the third argument (bin_size) is missing
     if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
         throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
 
     String bin_size_str = getConvertedArgument(fn_name, pos);
 
     ++pos;
-    // Check if the fourth argument (fixed_point) is missing
     if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
         throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty fixed point argument", fn_name);
 
