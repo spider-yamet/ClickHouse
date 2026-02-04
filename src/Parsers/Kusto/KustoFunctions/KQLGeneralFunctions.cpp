@@ -41,6 +41,9 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
 
     ++pos;
     // Check if the first argument is missing (comma or closing bracket immediately after opening bracket)
+    // Check pos.isValid() first to prevent accessing invalid memory, then check the token type
+    if (!pos.isValid())
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` shouldn't be empty.", fn_name);
     if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` shouldn't be empty.", fn_name);
 
@@ -51,6 +54,9 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
 
     ++pos;
     // Check if the second argument is missing (comma or closing bracket)
+    // Check pos.isValid() first to prevent accessing invalid memory, then check the token type
+    if (!pos.isValid())
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
     if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
 
@@ -103,6 +109,10 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         return false;
 
     ++pos;
+    // Check pos.isValid() first to prevent accessing invalid memory
+    if (!pos.isValid())
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be a valid argument.", fn_name);
+
     String origal_expr(pos->begin, pos->end);
 
     if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
@@ -110,9 +120,12 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
 
     String first_arg = getConvertedArgument(fn_name, pos);
     if (first_arg.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` shouldn't be empty.", fn_name);
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be non-empty argument.", fn_name);
 
     ++pos;
+    // Check pos.isValid() first to prevent accessing invalid memory
+    if (!pos.isValid())
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` should be a valid argument.", fn_name);
 
     if (pos->type == TokenType::Comma)
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
@@ -121,13 +134,16 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
 
     String second_arg = getConvertedArgument(fn_name, pos);
     if (second_arg.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` should be a valid argument.", fn_name);
 
     ++pos;
+    // Check pos.isValid() first to prevent accessing invalid memory
+    if (!pos.isValid())
+        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
     if (!isValidKQLPos(pos) || pos->type == TokenType::PipeMark || pos->type == TokenType::Semicolon)
         throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
     if (pos->type == TokenType::Comma)
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The third argument of `{}` shouldn't be empty.", fn_name);
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The third argument of `{}` should be a valid argument.", fn_name);
     if (pos->type == TokenType::ClosingRoundBracket)
         throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
 
@@ -137,7 +153,8 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
 
     // Determine if this is 3-arg or 4-arg form
     // getConvertedArgument() leaves pos at the comma (if 4-arg) or closing bracket (if 3-arg)
-    if (!isValidKQLPos(pos))
+    // Check pos.isValid() first to prevent accessing invalid memory
+    if (!pos.isValid())
         throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a valid argument structure", fn_name);
 
     String expression_str;
@@ -154,7 +171,8 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
     {
         // 4-argument form: bin_at(type_expr, expression, bin_size, fixed_point)
         ++pos; // Skip the comma
-        if (!isValidKQLPos(pos) || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
+        // Check pos.isValid() first before accessing pos->type
+        if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
             throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty fixed point argument", fn_name);
 
         String fourth_arg = getConvertedArgument(fn_name, pos);
