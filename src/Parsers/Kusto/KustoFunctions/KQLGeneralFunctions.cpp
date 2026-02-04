@@ -14,6 +14,7 @@
 #include <Parsers/Kusto/ParserKQLDateTypeTimespan.h>
 #include <Parsers/Kusto/ParserKQLQuery.h>
 #include <Parsers/Kusto/ParserKQLStatement.h>
+#include <Parsers/Kusto/Utilities.h>
 #include <Parsers/ParserSetQuery.h>
 #include <Common/Exception.h>
 #include <boost/lexical_cast.hpp>
@@ -123,9 +124,10 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
 
     ++pos;
-    // Check if the third argument is missing
-    if (pos->type == TokenType::Comma)
+    if (!isValidKQLPos(pos) || pos->type == TokenType::PipeMark || pos->type == TokenType::Semicolon)
         throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
+    if (pos->type == TokenType::Comma)
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The third argument of `{}` shouldn't be empty.", fn_name);
     if (pos->type == TokenType::ClosingRoundBracket)
         throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
 
@@ -133,7 +135,6 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
     if (third_arg.empty())
         throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
 
-    ++pos;
     // Determine if this is 3-arg or 4-arg form
     String expression_str;
     String bin_size_str;
@@ -144,8 +145,9 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         bin_size_str = second_arg;
         fixed_point_str = third_arg;
     }
-    else
+    else if (pos->type == TokenType::Comma)
     {
+        ++pos; // Skip the comma
         if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
             throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty fixed point argument", fn_name);
 
@@ -156,6 +158,10 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         expression_str = second_arg;
         bin_size_str = third_arg;
         fixed_point_str = fourth_arg;
+    }
+    else
+    {
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a valid argument structure", fn_name);
     }
 
     auto t1 = fmt::format("toFloat64({})", fixed_point_str);
