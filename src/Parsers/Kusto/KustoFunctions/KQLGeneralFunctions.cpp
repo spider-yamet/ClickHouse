@@ -37,12 +37,20 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
         return false;
 
     ++pos;
+    // Check if the first argument is missing (comma or closing bracket immediately after opening bracket)
+    if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` shouldn't be empty.", fn_name);
+
     String origal_expr(pos->begin, pos->end);
     String value = getConvertedArgument(fn_name, pos);
     if (value.empty())
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` shouldn't be empty.", fn_name);
 
     ++pos;
+    // Check if the second argument is missing (comma or closing bracket)
+    if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
+
     String round_to = getConvertedArgument(fn_name, pos);
 
     //remove sapce between minus and number
@@ -86,14 +94,32 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
 
     ++pos;
     String origal_expr(pos->begin, pos->end);
+    // Get and validate first argument (type expression like datetime(...))
+    String first_arg = getConvertedArgument(fn_name, pos);
+    if (first_arg.empty())
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` shouldn't be empty.", fn_name);
+
+    ++pos;
+    // Check if the second argument (expression) is missing
+    if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
+
     String expression_str = getConvertedArgument(fn_name, pos);
     if (expression_str.empty())
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
 
     ++pos;
+    // Check if the third argument (bin_size) is missing
+    if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
+        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
+
     String bin_size_str = getConvertedArgument(fn_name, pos);
 
     ++pos;
+    // Check if the fourth argument (fixed_point) is missing
+    if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty fixed point argument", fn_name);
+
     String fixed_point_str = getConvertedArgument(fn_name, pos);
     if (fixed_point_str.empty())
         throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty fixed point argument", fn_name);
