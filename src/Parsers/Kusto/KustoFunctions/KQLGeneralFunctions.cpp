@@ -136,19 +136,25 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
 
     // Determine if this is 3-arg or 4-arg form
+    // getConvertedArgument() leaves pos at the comma (if 4-arg) or closing bracket (if 3-arg)
+    if (!isValidKQLPos(pos))
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a valid argument structure", fn_name);
+
     String expression_str;
     String bin_size_str;
     String fixed_point_str;
     if (pos->type == TokenType::ClosingRoundBracket)
     {
+        // 3-argument form: bin_at(expression, bin_size, fixed_point)
         expression_str = first_arg;
         bin_size_str = second_arg;
         fixed_point_str = third_arg;
     }
     else if (pos->type == TokenType::Comma)
     {
+        // 4-argument form: bin_at(type_expr, expression, bin_size, fixed_point)
         ++pos; // Skip the comma
-        if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
+        if (!isValidKQLPos(pos) || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
             throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty fixed point argument", fn_name);
 
         String fourth_arg = getConvertedArgument(fn_name, pos);
