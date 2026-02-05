@@ -53,11 +53,12 @@ namespace
             }
         }
 
-        static const std::vector<std::string_view> kql_functions = {
-            "bin", "bin_at", "ago", "now", "datetime_diff", "extract", "parse_json"
+        // Check for functions that are truly unique to KQL
+        static const std::vector<std::string_view> kql_unique_functions = {
+            "bin", "bin_at", "ago", "now", "datetime_diff", "parse_json"
         };
 
-        for (const auto & func : kql_functions)
+        for (const auto & func : kql_unique_functions)
         {
             String func_with_paren = String(func) + "(";
             size_t pos = query_lower.find(func_with_paren);
@@ -66,6 +67,30 @@ namespace
                 if (pos == 0 || !std::isalnum(static_cast<unsigned char>(query_lower[pos - 1])))
                 {
                     return true;
+                }
+            }
+        }
+
+        // Special handling for "extract" - it exists in both SQL and KQL
+        {
+            String extract_with_paren = "extract(";
+            size_t pos = query_lower.find(extract_with_paren);
+            if (pos != String::npos)
+            {
+                if (pos == 0 || !std::isalnum(static_cast<unsigned char>(query_lower[pos - 1])))
+                {
+                    size_t after_paren = pos + extract_with_paren.size();
+                    if (after_paren < query.size())
+                    {
+                        while (after_paren < query.size() &&
+                               (query[after_paren] == ' ' || query[after_paren] == '\t'))
+                            ++after_paren;
+                        if (after_paren < query.size() &&
+                            (query[after_paren] == '\'' || query[after_paren] == '"'))
+                        {
+                            return true;  // KQL extract with regex pattern
+                        }
+                    }
                 }
             }
         }
