@@ -25,12 +25,13 @@ namespace DB
 
 namespace
 {
-    /// Check if query looks like KQL by checking for common KQL keywords
+    /// Check if query looks like KQL by checking for KQL-specific keywords
+    /// Note: We only check for keywords that are unique to KQL or very KQL-specific,
+    /// not common SQL keywords like "where", "order", "limit" that appear in both.
     bool isKQLQuery(const std::string_view & query)
     {
         static const std::vector<std::string_view> kql_keywords = {
-            "print", "project", "extend", "where", "summarize", "take", "limit",
-            "order", "sort", "top", "distinct", "count", "make-series", "render"
+            "print", "project", "extend", "summarize", "take", "make-series", "render"
         };
 
         String query_lower;
