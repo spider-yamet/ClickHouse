@@ -2529,6 +2529,10 @@ MultiQueryProcessingStage ClientBase::analyzeMultiQueryText(
     catch (const Exception & e)
     {
         current_exception.reset(e.clone());
+        // If client_exception was already set by parseQuery, keep it.
+        // Otherwise, set it here since parsing exceptions are client-side errors.
+        if (!client_exception)
+            client_exception.reset(e.clone());
         return MultiQueryProcessingStage::PARSING_EXCEPTION;
     }
 
