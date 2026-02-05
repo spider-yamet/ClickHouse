@@ -432,10 +432,18 @@ ASTPtr ClientBase::parseQuery(const char *& pos, const char * end, const Setting
     }
     else
     {
-        if (dialect == Dialect::kusto)
-            res = parseKQLQueryAndMovePosition(*parser, pos, end, "", allow_multi_statements, max_length, settings[Setting::max_parser_depth], settings[Setting::max_parser_backtracks]);
-        else
-            res = parseQueryAndMovePosition(*parser, pos, end, "", allow_multi_statements, max_length, settings[Setting::max_parser_depth], settings[Setting::max_parser_backtracks]);
+        try
+        {
+            if (dialect == Dialect::kusto)
+                res = parseKQLQueryAndMovePosition(*parser, pos, end, "", allow_multi_statements, max_length, settings[Setting::max_parser_depth], settings[Setting::max_parser_backtracks]);
+            else
+                res = parseQueryAndMovePosition(*parser, pos, end, "", allow_multi_statements, max_length, settings[Setting::max_parser_depth], settings[Setting::max_parser_backtracks]);
+        }
+        catch (const Exception & e)
+        {
+            client_exception.reset(e.clone());
+            throw;
+        }
     }
 
     if (is_interactive)
