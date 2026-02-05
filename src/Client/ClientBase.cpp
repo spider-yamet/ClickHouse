@@ -432,18 +432,10 @@ ASTPtr ClientBase::parseQuery(const char *& pos, const char * end, const Setting
     }
     else
     {
-        try
-        {
-            if (dialect == Dialect::kusto)
-                res = parseKQLQueryAndMovePosition(*parser, pos, end, "", allow_multi_statements, max_length, settings[Setting::max_parser_depth], settings[Setting::max_parser_backtracks]);
-            else
-                res = parseQueryAndMovePosition(*parser, pos, end, "", allow_multi_statements, max_length, settings[Setting::max_parser_depth], settings[Setting::max_parser_backtracks]);
-        }
-        catch (const Exception & e)
-        {
-            client_exception.reset(e.clone());
-            throw;
-        }
+        if (dialect == Dialect::kusto)
+            res = parseKQLQueryAndMovePosition(*parser, pos, end, "", allow_multi_statements, max_length, settings[Setting::max_parser_depth], settings[Setting::max_parser_backtracks]);
+        else
+            res = parseQueryAndMovePosition(*parser, pos, end, "", allow_multi_statements, max_length, settings[Setting::max_parser_depth], settings[Setting::max_parser_backtracks]);
     }
 
     if (is_interactive)
@@ -2529,10 +2521,6 @@ MultiQueryProcessingStage ClientBase::analyzeMultiQueryText(
     catch (const Exception & e)
     {
         current_exception.reset(e.clone());
-        // If client_exception was already set by parseQuery, keep it.
-        // Otherwise, set it here since parsing exceptions are client-side errors.
-        if (!client_exception)
-            client_exception.reset(e.clone());
         return MultiQueryProcessingStage::PARSING_EXCEPTION;
     }
 
