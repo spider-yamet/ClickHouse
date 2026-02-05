@@ -28,7 +28,6 @@ namespace
     /// Check if query looks like KQL by checking for common KQL keywords
     bool isKQLQuery(const std::string_view & query)
     {
-        // Common KQL keywords that are less common in SQL
         static const std::vector<std::string_view> kql_keywords = {
             "print", "project", "extend", "where", "summarize", "take", "limit",
             "order", "sort", "top", "distinct", "count", "make-series", "render"
@@ -44,7 +43,6 @@ namespace
             size_t pos = query_lower.find(keyword);
             if (pos != String::npos)
             {
-                // Check if it's a word boundary (not part of another word)
                 if ((pos == 0 || !std::isalnum(static_cast<unsigned char>(query_lower[pos - 1]))) &&
                     (pos + keyword.size() >= query_lower.size() ||
                      !std::isalnum(static_cast<unsigned char>(query_lower[pos + keyword.size()]))))
@@ -54,17 +52,16 @@ namespace
             }
         }
 
-        // Also check for KQL functions (bin, bin_at, etc.)
         static const std::vector<std::string_view> kql_functions = {
             "bin", "bin_at", "ago", "now", "datetime_diff", "extract", "parse_json"
         };
 
         for (const auto & func : kql_functions)
         {
-            size_t pos = query_lower.find(func + "(");
+            String func_with_paren = String(func) + "(";
+            size_t pos = query_lower.find(func_with_paren);
             if (pos != String::npos)
             {
-                // Check if it's a word boundary
                 if (pos == 0 || !std::isalnum(static_cast<unsigned char>(query_lower[pos - 1])))
                 {
                     return true;
@@ -90,11 +87,9 @@ namespace
 
             if (pos + 1 < end && pos[0] == '-' && pos[1] == '-')
             {
-                // Found -- comment, extract until newline
                 const char * comment_start = pos;
-                pos += 2; // Skip --
+                pos += 2;
 
-                // Skip whitespace
                 while (pos < end && (*pos == ' ' || *pos == '\t'))
                     ++pos;
 
@@ -103,7 +98,6 @@ namespace
                 if (comment_end == end)
                     comment_end = end;
 
-                // Extract comment (including --)
                 String comment(comment_start, comment_end - comment_start);
                 if (!comment.empty())
                     comments.push_back(comment);
@@ -156,15 +150,11 @@ TestHint::TestHint(const std::string_view & query)
     }
 
     // KQL fallback: Only if no hints were found (empty server_errors and client_errors)
-    // and query looks like KQL, try string-based extraction as fallback
-    // This handles malformed KQL queries where Lexer might stop early before finding comments
     if (server_errors.empty() && client_errors.empty() && !echo.has_value() && isKQLQuery(query))
     {
         std::vector<String> comments;
         extractCommentsFromString(query, comments);
 
-        // For each comment, check if it's a leading hint by looking at the raw string
-        // A comment is leading if it appears before any non-whitespace content
         for (const auto & comment : comments)
         {
             // Find where this comment starts in the original query
