@@ -40,23 +40,26 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
         return false;
 
     ++pos;
+    // Check if first argument is empty (comma or closing bracket immediately after opening bracket)
+    if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid.", fn_name);
+
     // Capture the first token for type checking (before getConvertedArgument advances pos)
     String origal_expr;
-    if (pos.isValid() && pos->type != TokenType::Comma && pos->type != TokenType::ClosingRoundBracket)
+    if (pos->type != TokenType::Comma && pos->type != TokenType::ClosingRoundBracket)
         origal_expr = String(pos->begin, pos->end);
 
     String value = getConvertedArgument(fn_name, pos);
-    if (value.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` shouldn't be empty.", fn_name);
 
     ++pos;
+    // Check if second argument is empty (comma or closing bracket immediately)
+    if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
+
     String round_to = getConvertedArgument(fn_name, pos);
 
     //remove space between minus and number
     round_to.erase(std::remove_if(round_to.begin(), round_to.end(), isspace), round_to.end());
-
-    if (round_to.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
 
     auto t = fmt::format("toFloat64({})", value);
 
@@ -99,24 +102,30 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         return false;
 
     ++pos;
+    // Check if first argument is empty (comma or closing bracket immediately after opening bracket)
+    if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` shouldn't be empty.", fn_name);
+
     // Capture the first token for type checking (before getConvertedArgument advances pos)
     String origal_expr;
-    if (pos.isValid() && pos->type != TokenType::Comma && pos->type != TokenType::ClosingRoundBracket)
+    if (pos->type != TokenType::Comma && pos->type != TokenType::ClosingRoundBracket)
         origal_expr = String(pos->begin, pos->end);
 
     String first_arg = getConvertedArgument(fn_name, pos);
-    if (first_arg.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` shouldn't be empty.", fn_name);
 
     ++pos;
-    String second_arg = getConvertedArgument(fn_name, pos);
-    if (second_arg.empty())
+    // Check if second argument is empty
+    if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
 
+    String second_arg = getConvertedArgument(fn_name, pos);
+
     ++pos;
-    String third_arg = getConvertedArgument(fn_name, pos);
-    if (third_arg.empty())
+    // Check if third argument is empty
+    if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
         throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
+
+    String third_arg = getConvertedArgument(fn_name, pos);
 
     // Determine if this is 3-arg or 4-arg form
     // getConvertedArgument() leaves pos at the comma (if 4-arg) or closing bracket (if 3-arg)
