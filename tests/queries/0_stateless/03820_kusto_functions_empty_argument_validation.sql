@@ -8,52 +8,52 @@ SET dialect = 'kusto';
 
 -- Test bin() function with empty first argument
 -- Expected: Should throw SYNTAX_ERROR exception, not crash
-print bin(, 1.5); -- { clientError SYNTAX_ERROR }
+print bin(, 1.5); -- { serverError SYNTAX_ERROR }
 
 -- Test bin() function with empty bin size argument
 -- Expected: Should throw SYNTAX_ERROR exception, not crash
-print bin(4.5,,); -- { clientError SYNTAX_ERROR }
+print bin(4.5,,); -- { serverError SYNTAX_ERROR }
 
 -- Test bin() function with zero bin size argument
 -- Expected: Should throw BAD_ARGUMENTS exception, not crash
-print bin(4.5, 0); -- { clientError BAD_ARGUMENTS }
+print bin(4.5, 0); -- { serverError BAD_ARGUMENTS }
 
 -- Test bin() function with negative bin size argument
 -- Expected: Should throw BAD_ARGUMENTS exception, not crash
-print bin(4.5, -1.5); -- { clientError BAD_ARGUMENTS }
+print bin(4.5, -1.5); -- { serverError BAD_ARGUMENTS }
 
 -- Test bin_at() function with empty expression argument
 -- Expected: Should throw SYNTAX_ERROR exception, not crash
-print bin_at(datetime(2017-05-15 10:20:00.0),, 10.5, 5.0); -- { clientError SYNTAX_ERROR }
+print bin_at(datetime(2017-05-15 10:20:00.0),, 10.5, 5.0); -- { serverError SYNTAX_ERROR }
 
 -- Test bin_at() function with empty bin size argument  
 -- Expected: Should throw BAD_ARGUMENTS exception, not crash
-print bin_at(datetime(2017-05-15 10:20:00.0), 10.5,, 5.0); -- { clientError BAD_ARGUMENTS }
+print bin_at(datetime(2017-05-15 10:20:00.0), 10.5,, 5.0); -- { serverError BAD_ARGUMENTS }
 
 -- Test bin_at() function with empty fixed point argument
 -- Expected: Should throw SYNTAX_ERROR exception, not crash
-print bin_at(datetime(2017-05-15 10:20:00.0), 10.5, 1.5,); -- { clientError SYNTAX_ERROR }
+print bin_at(datetime(2017-05-15 10:20:00.0), 10.5, 1.5,); -- { serverError SYNTAX_ERROR }
 
 -- Test bin_at() function with zero bin size argument
 -- Expected: Should throw BAD_ARGUMENTS exception, not crash
-print bin_at(datetime(2017-05-15 10:20:00.0), 10.5, 0, 5.0); -- { clientError BAD_ARGUMENTS }
+print bin_at(datetime(2017-05-15 10:20:00.0), 10.5, 0, 5.0); -- { serverError BAD_ARGUMENTS }
 
 -- Test bin_at() function with negative bin size argument
 -- Expected: Should throw BAD_ARGUMENTS exception, not crash
-print bin_at(datetime(2017-05-15 10:20:00.0), 10.5, -1.5, 5.0); -- { clientError BAD_ARGUMENTS }
+print bin_at(datetime(2017-05-15 10:20:00.0), 10.5, -1.5, 5.0); -- { serverError BAD_ARGUMENTS }
 
 -- Test extract() function with empty capture group argument
 -- Expected: Should throw BAD_ARGUMENTS exception, not crash
-print extract("User: ([^,]+)",, "User: James, Email: James@example.com, Age: 29"); -- { clientError BAD_ARGUMENTS }
+print extract("User: ([^,]+)",, "User: James, Email: James@example.com, Age: 29"); -- { serverError BAD_ARGUMENTS }
 
 -- Test indexof() function with empty start_index argument
 -- Expected: Should throw SYNTAX_ERROR exception, not crash
-print indexof("hello world", "world",,); -- { clientError SYNTAX_ERROR }
+print indexof("hello world", "world",,); -- { serverError SYNTAX_ERROR }
 
 -- Test indexof() function with empty length argument
 -- Expected: Should throw SYNTAX_ERROR exception, not crash
-print indexof("hello world", "world", 0,,); -- { clientError SYNTAX_ERROR }
+print indexof("hello world", "world", 0,,); -- { serverError SYNTAX_ERROR }
 
 -- Test indexof() function with empty occurrence argument
 -- Expected: Should throw SYNTAX_ERROR exception, not crash
-print indexof("hello world", "world", 0, 11,,); -- { clientError SYNTAX_ERROR }
+print indexof("hello world", "world", 0, 11,,); -- { serverError SYNTAX_ERROR }
