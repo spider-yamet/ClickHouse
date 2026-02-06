@@ -4,13 +4,13 @@
 #include <cctype>
 #include <iterator>
 #include <vector>
-#include <iostream>
 
 #include <Client/TestHint.h>
 
 #include <Parsers/Lexer.h>
 #include <Common/ErrorCodes.h>
 #include <Common/Exception.h>
+#include <Common/logger_useful.h>
 #include <base/find_symbols.h>
 
 #include <fmt/ranges.h>
@@ -180,10 +180,11 @@ TestHint::TestHint(const std::string_view & query)
     // because Lexer might fail on malformed queries before reaching comments
     if (isKQLQuery(query))
     {
+        auto logger = getLogger("TestHint");
         std::vector<String> comments;
         extractCommentsFromString(query, comments);
 
-        std::cerr << "[TestHint] KQL query detected, found " << comments.size() << " comment(s) via string extraction" << std::endl;
+        LOG_DEBUG(logger, "KQL query detected, found {} comment(s) via string extraction", comments.size());
 
         for (const auto & comment : comments)
         {
@@ -210,7 +211,7 @@ TestHint::TestHint(const std::string_view & query)
                 size_t pos_end = comment.find('}', pos_start);
                 if (pos_end != String::npos)
                 {
-                    std::cerr << "[TestHint] KQL: Found hint in comment: " << comment << std::endl;
+                    LOG_DEBUG(logger, "KQL: Found hint in comment: {}", comment);
                     size_t old_client_errors = client_errors.size();
                     size_t old_server_errors = server_errors.size();
 
@@ -222,15 +223,15 @@ TestHint::TestHint(const std::string_view & query)
 
                     if (new_client_errors > old_client_errors || new_server_errors > old_server_errors)
                     {
-                        std::cerr << "[TestHint] KQL: Successfully parsed hint - client_errors: " << client_errors.size()
-                                  << ", server_errors: " << server_errors.size() << std::endl;
+                        LOG_DEBUG(logger, "KQL: Successfully parsed hint - client_errors: {}, server_errors: {}",
+                                  client_errors.size(), server_errors.size());
                     }
                 }
             }
         }
 
-        std::cerr << "[TestHint] KQL: Final state - client_errors: " << client_errors.size()
-                  << ", server_errors: " << server_errors.size() << std::endl;
+        LOG_DEBUG(logger, "KQL: Final state - client_errors: {}, server_errors: {}",
+                  client_errors.size(), server_errors.size());
     }
 }
 
