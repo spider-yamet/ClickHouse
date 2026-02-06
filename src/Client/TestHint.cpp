@@ -4,6 +4,7 @@
 #include <cctype>
 #include <iterator>
 #include <vector>
+#include <iostream>
 
 #include <Client/TestHint.h>
 
@@ -182,6 +183,8 @@ TestHint::TestHint(const std::string_view & query)
         std::vector<String> comments;
         extractCommentsFromString(query, comments);
 
+        std::cerr << "[TestHint] KQL query detected, found " << comments.size() << " comment(s) via string extraction" << std::endl;
+
         for (const auto & comment : comments)
         {
             // Find where this comment starts in the original query
@@ -207,11 +210,27 @@ TestHint::TestHint(const std::string_view & query)
                 size_t pos_end = comment.find('}', pos_start);
                 if (pos_end != String::npos)
                 {
+                    std::cerr << "[TestHint] KQL: Found hint in comment: " << comment << std::endl;
+                    size_t old_client_errors = client_errors.size();
+                    size_t old_server_errors = server_errors.size();
+
                     Lexer comment_lexer(comment.c_str() + pos_start + 1, comment.c_str() + pos_end, 0);
                     parse(comment_lexer, is_leading);
+
+                    size_t new_client_errors = client_errors.size();
+                    size_t new_server_errors = server_errors.size();
+
+                    if (new_client_errors > old_client_errors || new_server_errors > old_server_errors)
+                    {
+                        std::cerr << "[TestHint] KQL: Successfully parsed hint - client_errors: " << client_errors.size()
+                                  << ", server_errors: " << server_errors.size() << std::endl;
+                    }
                 }
             }
         }
+
+        std::cerr << "[TestHint] KQL: Final state - client_errors: " << client_errors.size()
+                  << ", server_errors: " << server_errors.size() << std::endl;
     }
 }
 
