@@ -6,7 +6,6 @@
 #include <base/EnumReflection.h>
 #include <pcg_random.hpp>
 #include <Poco/String.h>
-#include <Common/logger_useful.h>
 
 #include <numeric>
 #include <stack>
@@ -150,9 +149,6 @@ String IParserKQLFunction::getConvertedArgument(const String & fn_name, IParser:
     // Check for empty argument (comma or closing bracket immediately)
     if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket || pos->type == TokenType::ClosingSquareBracket)
     {
-        auto logger = getLogger("IParserKQLFunction");
-        LOG_INFO(logger, "getConvertedArgument: Detected empty argument for function {} - token type: {}",
-                 fn_name, magic_enum::enum_name(pos->type));
         return {};
     }
 
