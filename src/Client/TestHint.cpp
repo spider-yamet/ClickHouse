@@ -180,11 +180,8 @@ TestHint::TestHint(const std::string_view & query)
     // because Lexer might fail on malformed queries before reaching comments
     if (isKQLQuery(query))
     {
-        auto logger = getLogger("TestHint");
         std::vector<String> comments;
         extractCommentsFromString(query, comments);
-
-        LOG_INFO(logger, "KQL query detected, found {} comment(s) via string extraction", comments.size());
 
         for (const auto & comment : comments)
         {
@@ -211,27 +208,11 @@ TestHint::TestHint(const std::string_view & query)
                 size_t pos_end = comment.find('}', pos_start);
                 if (pos_end != String::npos)
                 {
-                    LOG_INFO(logger, "KQL: Found hint in comment: {}", comment);
-                    size_t old_client_errors = client_errors.size();
-                    size_t old_server_errors = server_errors.size();
-
                     Lexer comment_lexer(comment.c_str() + pos_start + 1, comment.c_str() + pos_end, 0);
                     parse(comment_lexer, is_leading);
-
-                    size_t new_client_errors = client_errors.size();
-                    size_t new_server_errors = server_errors.size();
-
-                    if (new_client_errors > old_client_errors || new_server_errors > old_server_errors)
-                    {
-                        LOG_INFO(logger, "KQL: Successfully parsed hint - client_errors: {}, server_errors: {}",
-                                 client_errors.size(), server_errors.size());
-                    }
                 }
             }
         }
-
-        LOG_INFO(logger, "KQL: Final state - client_errors: {}, server_errors: {}",
-                 client_errors.size(), server_errors.size());
     }
 }
 
