@@ -16,7 +16,6 @@
 #include <Parsers/Kusto/ParserKQLStatement.h>
 #include <Parsers/Kusto/ParserKQLDateTypeTimespan.h>
 #include <Parsers/Kusto/parseKQLQuery.h>
-#include <Common/logger_useful.h>
 
 namespace DB
 {
@@ -324,9 +323,6 @@ ASTPtr tryParseKQLQuery(
     bool skip_insignificant)
 {
     const char * query_begin = _out_query_end;
-    auto logger = getLogger("parseKQLQuery");
-    String query_preview(query_begin, std::min(static_cast<size_t>(100), static_cast<size_t>(all_queries_end - query_begin)));
-    LOG_INFO(logger, "tryParseKQLQuery: Starting to parse KQL query (preview: {})", query_preview);
 
     Tokens tokens(query_begin, all_queries_end, max_query_size, skip_insignificant);
     /// NOTE: consider use UInt32 for max_parser_depth setting.
@@ -353,8 +349,6 @@ ASTPtr tryParseKQLQuery(
     const bool parse_res = parser.parse(token_iterator, res, expected);
     const auto last_token = token_iterator.max();
     _out_query_end = last_token.end;
-
-    LOG_INFO(logger, "tryParseKQLQuery: Parse result: {}, last_token type: {}", parse_res ? "success" : "failed", static_cast<int>(last_token.type));
 
     ASTInsertQuery * insert = nullptr;
     if (parse_res)

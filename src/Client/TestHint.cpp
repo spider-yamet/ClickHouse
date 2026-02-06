@@ -10,7 +10,6 @@
 #include <Parsers/Lexer.h>
 #include <Common/ErrorCodes.h>
 #include <Common/Exception.h>
-#include <Common/logger_useful.h>
 #include <base/find_symbols.h>
 
 #include <fmt/ranges.h>
@@ -180,15 +179,11 @@ TestHint::TestHint(const std::string_view & query)
     // because Lexer might fail on malformed queries before reaching comments
     if (isKQLQuery(query))
     {
-        auto logger = getLogger("TestHint");
-        LOG_INFO(logger, "TestHint: KQL query detected, using string-based comment extraction");
         std::vector<String> comments;
         extractCommentsFromString(query, comments);
-        LOG_INFO(logger, "TestHint: Found {} comment(s) via string extraction", comments.size());
 
         for (const auto & comment : comments)
         {
-
             // Find where this comment starts in the original query
             size_t comment_pos = query.find(comment);
             if (comment_pos == std::string_view::npos)
@@ -212,19 +207,8 @@ TestHint::TestHint(const std::string_view & query)
                 size_t pos_end = comment.find('}', pos_start);
                 if (pos_end != String::npos)
                 {
-                    LOG_INFO(logger, "TestHint: Found hint in KQL comment: {}", comment);
-                    size_t old_client_errors = client_errors.size();
-                    size_t old_server_errors = server_errors.size();
                     Lexer comment_lexer(comment.c_str() + pos_start + 1, comment.c_str() + pos_end, 0);
                     parse(comment_lexer, is_leading);
-                    if (client_errors.size() > old_client_errors || server_errors.size() > old_server_errors)
-                    {
-                        LOG_INFO(logger, "TestHint: Successfully parsed KQL hint - client_errors: {} -> {} (codes: {}), server_errors: {} -> {} (codes: {})",
-                                 old_client_errors, client_errors.size(),
-                                 fmt::join(client_errors, ","),
-                                 old_server_errors, server_errors.size(),
-                                 fmt::join(server_errors, ","));
-                    }
                 }
             }
         }

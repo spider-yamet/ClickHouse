@@ -17,7 +17,6 @@
 #include <Parsers/Kusto/Utilities.h>
 #include <Parsers/ParserSetQuery.h>
 #include <Common/Exception.h>
-#include <Common/logger_useful.h>
 #include <boost/lexical_cast.hpp>
 
 #include <algorithm>
@@ -40,18 +39,21 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     if (fn_name.empty())
         return false;
 
-    auto logger = getLogger("KQLGeneralFunctions");
-    LOG_INFO(logger, "Bin::convertImpl: Processing function {}", fn_name);
-
     ++pos;
+    // pos is now at the opening bracket '('
+    if (!pos.isValid() || pos->type != TokenType::OpeningRoundBracket)
+        return false;
 
+    // Check if first argument is empty (comma or closing bracket immediately after opening bracket)
+    IParser::Pos peek_pos = pos;
+    ++peek_pos;
     // Capture the first token for type checking (before getConvertedArgument advances pos)
     String origal_expr;
-    if (pos.isValid() && pos->type != TokenType::Comma && pos->type != TokenType::ClosingRoundBracket)
-        origal_expr = String(pos->begin, pos->end);
+    if (peek_pos->type != TokenType::Comma && peek_pos->type != TokenType::ClosingRoundBracket)
+        origal_expr = String(peek_pos->begin, peek_pos->end);
 
+    // getConvertedArgument handles argument processing and advances pos to the comma/closing bracket
     String value = getConvertedArgument(fn_name, pos);
-    LOG_INFO(logger, "Bin::convertImpl: First argument value='{}', origal_expr='{}'", value, origal_expr);
 
     // Validate that the first argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (value.empty())
@@ -60,7 +62,6 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     ++pos;
 
     String round_to = getConvertedArgument(fn_name, pos);
-    LOG_INFO(logger, "Bin::convertImpl: Second argument round_to='{}'", round_to);
 
     // Validate that the second argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (round_to.empty())
@@ -109,13 +110,7 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
     if (fn_name.empty())
         return false;
 
-    auto logger = getLogger("KQLGeneralFunctions");
-    LOG_INFO(logger, "BinAt::convertImpl: Processing function {}", fn_name);
-
     ++pos;
-    // Check if first argument is empty (comma or closing bracket immediately after opening bracket)
-    if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid.", fn_name);
 
     // Capture the first token for type checking (before getConvertedArgument advances pos)
     String origal_expr;
@@ -123,7 +118,6 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         origal_expr = String(pos->begin, pos->end);
 
     String first_arg = getConvertedArgument(fn_name, pos);
-    LOG_INFO(logger, "BinAt::convertImpl: First argument value='{}', origal_expr='{}'", first_arg, origal_expr);
 
     // Validate that the first argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (first_arg.empty())
@@ -135,7 +129,6 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
 
     String second_arg = getConvertedArgument(fn_name, pos);
-    LOG_INFO(logger, "BinAt::convertImpl: Second argument value='{}'", second_arg);
 
     // Validate that the second argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (second_arg.empty())
@@ -147,7 +140,6 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
 
     String third_arg = getConvertedArgument(fn_name, pos);
-    LOG_INFO(logger, "BinAt::convertImpl: Third argument value='{}'", third_arg);
 
     // Validate that the third argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (third_arg.empty())

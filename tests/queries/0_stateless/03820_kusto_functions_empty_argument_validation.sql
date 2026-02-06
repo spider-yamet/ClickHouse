@@ -1,4 +1,3 @@
--- Tags: no-fasttest
 -- Test for issue #95509: Kusto functions should validate empty arguments properly
 -- This test ensures that functions bin(), bin_at(), extract(), and indexof() 
 -- throw proper exceptions instead of crashing when given empty arguments or invalid values.

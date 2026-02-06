@@ -6,7 +6,6 @@
 #include <base/EnumReflection.h>
 #include <pcg_random.hpp>
 #include <Poco/String.h>
-#include <Common/logger_useful.h>
 
 #include <numeric>
 #include <stack>
@@ -147,11 +146,23 @@ String IParserKQLFunction::getConvertedArgument(const String & fn_name, IParser:
 {
     int32_t round_bracket_count = 0;
     int32_t square_bracket_count = 0;
+
+    // If pos is at opening bracket, check the next token for empty argument
+    if (pos->type == TokenType::OpeningRoundBracket)
+    {
+        IParser::Pos peek_pos = pos;
+        ++peek_pos;
+        if (peek_pos.isValid() && (peek_pos->type == TokenType::Comma || peek_pos->type == TokenType::ClosingRoundBracket))
+        {
+            // Empty argument detected - advance pos past opening bracket and return empty
+            ++pos;
+            return {};
+        }
+    }
+
     // Check for empty argument (comma or closing bracket immediately)
     if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket || pos->type == TokenType::ClosingSquareBracket)
     {
-        auto logger = getLogger("IParserKQLFunction");
-        LOG_INFO(logger, "getConvertedArgument: Detected empty argument for function {} - token type: {}", fn_name, static_cast<int>(pos->type));
         return {};
     }
 
@@ -227,9 +238,6 @@ String IParserKQLFunction::getConvertedArgument(const String & fn_name, IParser:
     String converted_arg;
     for (const auto & token : tokens)
         converted_arg.append((converted_arg.empty() ? "" : " ") + token);
-
-    auto logger = getLogger("IParserKQLFunction");
-    LOG_INFO(logger, "getConvertedArgument: Function {} - converted argument: '{}'", fn_name, converted_arg);
 
     return converted_arg;
 }
