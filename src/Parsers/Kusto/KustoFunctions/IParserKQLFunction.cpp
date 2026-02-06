@@ -151,7 +151,7 @@ String IParserKQLFunction::getConvertedArgument(const String & fn_name, IParser:
     if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket || pos->type == TokenType::ClosingSquareBracket)
     {
         auto logger = getLogger("IParserKQLFunction");
-        LOG_DEBUG(logger, "getConvertedArgument: Detected empty argument for function {} - token type: {}", fn_name, static_cast<int>(pos->type));
+        LOG_INFO(logger, "getConvertedArgument: Detected empty argument for function {} - token type: {}", fn_name, static_cast<int>(pos->type));
         return {};
     }
 
@@ -229,7 +229,7 @@ String IParserKQLFunction::getConvertedArgument(const String & fn_name, IParser:
         converted_arg.append((converted_arg.empty() ? "" : " ") + token);
 
     auto logger = getLogger("IParserKQLFunction");
-    LOG_DEBUG(logger, "getConvertedArgument: Function {} - converted argument: '{}'", fn_name, converted_arg);
+    LOG_INFO(logger, "getConvertedArgument: Function {} - converted argument: '{}'", fn_name, converted_arg);
 
     return converted_arg;
 }

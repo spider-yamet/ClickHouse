@@ -181,13 +181,15 @@ TestHint::TestHint(const std::string_view & query)
     if (isKQLQuery(query))
     {
         auto logger = getLogger("TestHint");
-        LOG_DEBUG(logger, "TestHint: KQL query detected, using string-based comment extraction");
+        LOG_INFO(logger, "TestHint: KQL query detected, using string-based comment extraction");
         std::vector<String> comments;
         extractCommentsFromString(query, comments);
-        LOG_DEBUG(logger, "TestHint: Found {} comment(s) via string extraction", comments.size());
+        LOG_INFO(logger, "TestHint: Found {} comment(s) via string extraction", comments.size());
 
-        for (const auto & comment : comments)
+        for (size_t i = 0; i < comments.size(); ++i)
         {
+            const auto & comment = comments[i];
+
             // Find where this comment starts in the original query
             size_t comment_pos = query.find(comment);
             if (comment_pos == std::string_view::npos)
@@ -195,9 +197,9 @@ TestHint::TestHint(const std::string_view & query)
 
             // Check if there's any non-whitespace before this comment
             bool is_leading = true;
-            for (size_t i = 0; i < comment_pos; ++i)
+            for (size_t j = 0; j < comment_pos; ++j)
             {
-                char c = query[i];
+                char c = query[j];
                 if (c != ' ' && c != '\t' && c != '\n' && c != '\r')
                 {
                     is_leading = false;
@@ -211,15 +213,18 @@ TestHint::TestHint(const std::string_view & query)
                 size_t pos_end = comment.find('}', pos_start);
                 if (pos_end != String::npos)
                 {
-                    LOG_DEBUG(logger, "TestHint: Found hint in comment: {}", comment);
+                    LOG_INFO(logger, "TestHint: Found hint in KQL comment: {}", comment);
                     size_t old_client_errors = client_errors.size();
                     size_t old_server_errors = server_errors.size();
                     Lexer comment_lexer(comment.c_str() + pos_start + 1, comment.c_str() + pos_end, 0);
                     parse(comment_lexer, is_leading);
                     if (client_errors.size() > old_client_errors || server_errors.size() > old_server_errors)
                     {
-                        LOG_DEBUG(logger, "TestHint: Successfully parsed hint - client_errors: {}, server_errors: {}",
-                                 client_errors.size(), server_errors.size());
+                        LOG_INFO(logger, "TestHint: Successfully parsed KQL hint - client_errors: {} -> {} (codes: {}), server_errors: {} -> {} (codes: {})",
+                                 old_client_errors, client_errors.size(),
+                                 fmt::join(client_errors, ","),
+                                 old_server_errors, server_errors.size(),
+                                 fmt::join(server_errors, ","));
                     }
                 }
             }
