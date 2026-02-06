@@ -40,6 +40,9 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     if (fn_name.empty())
         return false;
 
+    auto logger = getLogger("KQLGeneralFunctions");
+    LOG_DEBUG(logger, "Bin::convertImpl: Processing function {}", fn_name);
+
     ++pos;
 
     // Capture the first token for type checking (before getConvertedArgument advances pos)
