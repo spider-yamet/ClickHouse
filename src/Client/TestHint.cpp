@@ -175,8 +175,9 @@ TestHint::TestHint(const std::string_view & query)
         }
     }
 
-    // KQL fallback: Only if no hints were found (empty server_errors and client_errors)
-    if (server_errors.empty() && client_errors.empty() && !echo.has_value() && isKQLQuery(query))
+    // KQL fallback: Always try string-based extraction for KQL queries
+    // because Lexer might fail on malformed queries before reaching comments
+    if (isKQLQuery(query))
     {
         std::vector<String> comments;
         extractCommentsFromString(query, comments);
