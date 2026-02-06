@@ -6,6 +6,7 @@
 #include <base/EnumReflection.h>
 #include <pcg_random.hpp>
 #include <Poco/String.h>
+#include <Common/logger_useful.h>
 
 #include <numeric>
 #include <stack>
@@ -149,6 +150,8 @@ String IParserKQLFunction::getConvertedArgument(const String & fn_name, IParser:
     // Check for empty argument (comma or closing bracket immediately)
     if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket || pos->type == TokenType::ClosingSquareBracket)
     {
+        auto logger = getLogger("IParserKQLFunction");
+        LOG_DEBUG(logger, "getConvertedArgument: Detected empty argument for function {} - token type: {}", fn_name, static_cast<int>(pos->type));
         return {};
     }
 
@@ -224,6 +227,9 @@ String IParserKQLFunction::getConvertedArgument(const String & fn_name, IParser:
     String converted_arg;
     for (const auto & token : tokens)
         converted_arg.append((converted_arg.empty() ? "" : " ") + token);
+
+    auto logger = getLogger("IParserKQLFunction");
+    LOG_DEBUG(logger, "getConvertedArgument: Function {} - converted argument: '{}'", fn_name, converted_arg);
 
     return converted_arg;
 }

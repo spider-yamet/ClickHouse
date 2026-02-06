@@ -17,6 +17,7 @@
 #include <Parsers/Kusto/Utilities.h>
 #include <Parsers/ParserSetQuery.h>
 #include <Common/Exception.h>
+#include <Common/logger_useful.h>
 #include <boost/lexical_cast.hpp>
 
 #include <algorithm>
@@ -47,18 +48,20 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
         origal_expr = String(pos->begin, pos->end);
 
     String value = getConvertedArgument(fn_name, pos);
+    LOG_DEBUG(logger, "Bin::convertImpl: First argument value='{}', origal_expr='{}'", value, origal_expr);
 
     // Validate that the first argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (value.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid.", fn_name);
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid argument.", fn_name);
 
     ++pos;
 
     String round_to = getConvertedArgument(fn_name, pos);
+    LOG_DEBUG(logger, "Bin::convertImpl: Second argument round_to='{}'", round_to);
 
     // Validate that the second argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (round_to.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` should be valid.", fn_name);
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` should be valid argument.", fn_name);
 
     //remove space between minus and number
     round_to.erase(std::remove_if(round_to.begin(), round_to.end(), isspace), round_to.end());
@@ -103,6 +106,9 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
     if (fn_name.empty())
         return false;
 
+    auto logger = getLogger("KQLGeneralFunctions");
+    LOG_DEBUG(logger, "BinAt::convertImpl: Processing function {}", fn_name);
+
     ++pos;
     // Check if first argument is empty (comma or closing bracket immediately after opening bracket)
     if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
@@ -114,6 +120,7 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         origal_expr = String(pos->begin, pos->end);
 
     String first_arg = getConvertedArgument(fn_name, pos);
+    LOG_DEBUG(logger, "BinAt::convertImpl: First argument value='{}', origal_expr='{}'", first_arg, origal_expr);
 
     // Validate that the first argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (first_arg.empty())
@@ -125,6 +132,7 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
 
     String second_arg = getConvertedArgument(fn_name, pos);
+    LOG_DEBUG(logger, "BinAt::convertImpl: Second argument value='{}'", second_arg);
 
     // Validate that the second argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (second_arg.empty())
@@ -136,6 +144,7 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
 
     String third_arg = getConvertedArgument(fn_name, pos);
+    LOG_DEBUG(logger, "BinAt::convertImpl: Third argument value='{}'", third_arg);
 
     // Validate that the third argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (third_arg.empty())
