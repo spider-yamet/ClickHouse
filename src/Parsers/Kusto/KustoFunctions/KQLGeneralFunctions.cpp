@@ -40,8 +40,7 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     if (fn_name.empty())
         return false;
 
-    ++pos;
-    // pos is now at the opening bracket '('
+    // getKQLFunctionName() already advanced pos to the opening bracket '('
     if (!pos.isValid() || pos->type != TokenType::OpeningRoundBracket)
         return false;
 
@@ -56,6 +55,10 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     String origal_expr;
     if (peek_pos.isValid() && peek_pos->type != TokenType::Comma && peek_pos->type != TokenType::ClosingRoundBracket)
         origal_expr = String(peek_pos->begin, peek_pos->end);
+
+    // Advance past the opening bracket to the first argument
+    ++pos;
+
 
     // getConvertedArgument handles argument processing and advances pos to the comma/closing bracket
     String value = getConvertedArgument(fn_name, pos);
@@ -105,7 +108,12 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     {
         out = fmt::format("toInt64({0} / {1}) * {1}", t, bin_size);
     }
-    return true;
+
+    // Validate that we're at the closing bracket
+    if (pos->type == TokenType::ClosingRoundBracket)
+        return true;
+
+    return false;
 }
 
 bool BinAt::convertImpl(String & out, IParser::Pos & pos)

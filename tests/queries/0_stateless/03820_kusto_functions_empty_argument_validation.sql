@@ -4,4 +4,4 @@ SET dialect = 'kusto';
 
 -- Test bin() function with empty first argument
 -- Expected: Should throw NUMBER_OF_ARGUMENTS_DOESNT_MATCH exception, not crash
-print bin(, 1.5); -- { serverError NUMBER_OF_ARGUMENTS_DOESNT_MATCH }
+print bin(, 1.5); -- { clientError NUMBER_OF_ARGUMENTS_DOESNT_MATCH }
