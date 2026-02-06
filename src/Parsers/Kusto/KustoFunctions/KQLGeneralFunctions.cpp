@@ -47,6 +47,10 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     // Check if first argument is empty (comma or closing bracket immediately after opening bracket)
     IParser::Pos peek_pos = pos;
     ++peek_pos;
+    // Validate empty argument BEFORE calling getConvertedArgument
+    if (peek_pos.isValid() && (peek_pos->type == TokenType::Comma || peek_pos->type == TokenType::ClosingRoundBracket))
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid argument.", fn_name);
+
     // Capture the first token for type checking (before getConvertedArgument advances pos)
     String origal_expr;
     if (peek_pos->type != TokenType::Comma && peek_pos->type != TokenType::ClosingRoundBracket)
