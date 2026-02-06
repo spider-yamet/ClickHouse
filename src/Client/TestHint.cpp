@@ -186,9 +186,8 @@ TestHint::TestHint(const std::string_view & query)
         extractCommentsFromString(query, comments);
         LOG_INFO(logger, "TestHint: Found {} comment(s) via string extraction", comments.size());
 
-        for (size_t i = 0; i < comments.size(); ++i)
+        for (const auto & comment : comments)
         {
-            const auto & comment = comments[i];
 
             // Find where this comment starts in the original query
             size_t comment_pos = query.find(comment);
