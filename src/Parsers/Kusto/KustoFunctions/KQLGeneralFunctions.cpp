@@ -27,6 +27,7 @@ namespace DB::ErrorCodes
 {
 extern const int BAD_ARGUMENTS;
 extern const int SYNTAX_ERROR;
+extern const int NUMBER_OF_ARGUMENTS_DOESNT_MATCH;
 }
 
 namespace DB
@@ -49,7 +50,7 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     ++peek_pos;
     // Validate empty argument BEFORE calling getConvertedArgument
     if (peek_pos.isValid() && (peek_pos->type == TokenType::Comma || peek_pos->type == TokenType::ClosingRoundBracket))
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid argument.", fn_name);
+        throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The first argument of `{}` should be valid argument.", fn_name);
 
     // Capture the first token for type checking (before getConvertedArgument advances pos)
     String origal_expr;
@@ -61,7 +62,7 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
 
     // Validate that the first argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (value.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid argument.", fn_name);
+        throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The first argument of `{}` should be valid argument.", fn_name);
 
     ++pos;
 
@@ -69,7 +70,7 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
 
     // Validate that the second argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (round_to.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` should be valid argument.", fn_name);
+        throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The second argument of `{}` should be valid argument.", fn_name);
 
     //remove space between minus and number
     round_to.erase(std::remove_if(round_to.begin(), round_to.end(), isspace), round_to.end());
@@ -125,18 +126,18 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
 
     // Validate that the first argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (first_arg.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid argument.", fn_name);
+        throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The first argument of `{}` should be valid argument.", fn_name);
 
     ++pos;
     // Check if second argument is empty
     if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
+        throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The second argument of `{}` shouldn't be empty.", fn_name);
 
     String second_arg = getConvertedArgument(fn_name, pos);
 
     // Validate that the second argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (second_arg.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
+        throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The second argument of `{}` shouldn't be empty.", fn_name);
 
     ++pos;
     // Check if third argument is empty
