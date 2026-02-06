@@ -53,7 +53,7 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
 
     // Capture the first token for type checking (before getConvertedArgument advances pos)
     String origal_expr;
-    if (peek_pos->type != TokenType::Comma && peek_pos->type != TokenType::ClosingRoundBracket)
+    if (peek_pos.isValid() && peek_pos->type != TokenType::Comma && peek_pos->type != TokenType::ClosingRoundBracket)
         origal_expr = String(peek_pos->begin, peek_pos->end);
 
     // getConvertedArgument handles argument processing and advances pos to the comma/closing bracket
