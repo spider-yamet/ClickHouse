@@ -40,31 +40,25 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
         return false;
 
     ++pos;
-    // Check if first argument is empty (comma or closing bracket immediately after opening bracket)
-    if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid one.", fn_name);
 
     // Capture the first token for type checking (before getConvertedArgument advances pos)
     String origal_expr;
-    if (pos->type != TokenType::Comma && pos->type != TokenType::ClosingRoundBracket)
+    if (pos.isValid() && pos->type != TokenType::Comma && pos->type != TokenType::ClosingRoundBracket)
         origal_expr = String(pos->begin, pos->end);
 
     String value = getConvertedArgument(fn_name, pos);
 
     // Validate that the first argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (value.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid argument.", fn_name);
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid.", fn_name);
 
     ++pos;
-    // Check if second argument is empty (comma or closing bracket immediately)
-    if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
 
     String round_to = getConvertedArgument(fn_name, pos);
 
     // Validate that the second argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (round_to.empty())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` should be valid argument.", fn_name);
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` should be valid.", fn_name);
 
     //remove space between minus and number
     round_to.erase(std::remove_if(round_to.begin(), round_to.end(), isspace), round_to.end());
