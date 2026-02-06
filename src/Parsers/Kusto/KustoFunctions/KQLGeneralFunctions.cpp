@@ -42,7 +42,7 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     ++pos;
     // Check if first argument is empty (comma or closing bracket immediately after opening bracket)
     if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid argument.", fn_name);
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid one.", fn_name);
 
     // Capture the first token for type checking (before getConvertedArgument advances pos)
     String origal_expr;
@@ -51,12 +51,20 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
 
     String value = getConvertedArgument(fn_name, pos);
 
+    // Validate that the first argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
+    if (value.empty())
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid argument.", fn_name);
+
     ++pos;
     // Check if second argument is empty (comma or closing bracket immediately)
     if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
         throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
 
     String round_to = getConvertedArgument(fn_name, pos);
+
+    // Validate that the second argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
+    if (round_to.empty())
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` should be valid argument.", fn_name);
 
     //remove space between minus and number
     round_to.erase(std::remove_if(round_to.begin(), round_to.end(), isspace), round_to.end());
@@ -104,7 +112,7 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
     ++pos;
     // Check if first argument is empty (comma or closing bracket immediately after opening bracket)
     if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid argument.", fn_name);
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid.", fn_name);
 
     // Capture the first token for type checking (before getConvertedArgument advances pos)
     String origal_expr;
@@ -113,6 +121,10 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
 
     String first_arg = getConvertedArgument(fn_name, pos);
 
+    // Validate that the first argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
+    if (first_arg.empty())
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The first argument of `{}` should be valid argument.", fn_name);
+
     ++pos;
     // Check if second argument is empty
     if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
@@ -120,12 +132,20 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
 
     String second_arg = getConvertedArgument(fn_name, pos);
 
+    // Validate that the second argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
+    if (second_arg.empty())
+        throw Exception(ErrorCodes::SYNTAX_ERROR, "The second argument of `{}` shouldn't be empty.", fn_name);
+
     ++pos;
     // Check if third argument is empty
     if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
         throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
 
     String third_arg = getConvertedArgument(fn_name, pos);
+
+    // Validate that the third argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
+    if (third_arg.empty())
+        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
 
     // Determine if this is 3-arg or 4-arg form
     // getConvertedArgument() leaves pos at the comma (if 4-arg) or closing bracket (if 3-arg)
