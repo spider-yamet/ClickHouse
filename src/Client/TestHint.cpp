@@ -136,6 +136,44 @@ namespace
             }
         }
     }
+
+    /// Check if there's any actual query content (non-comment, non-whitespace) before a given position
+    bool hasQueryContentBefore(const std::string_view & query, size_t position)
+    {
+        const char * pos = query.data();
+        const char * end = query.data() + position;
+        const char * query_end = query.data() + query.size();
+
+        while (pos < end)
+        {
+            // Skip whitespace
+            while (pos < end && (*pos == ' ' || *pos == '\t' || *pos == '\n' || *pos == '\r'))
+                ++pos;
+
+            if (pos >= end)
+                break;
+
+            // Check if this is a comment (need to check bounds against query_end, not end)
+            if (pos + 1 < query_end && pos[0] == '-' && pos[1] == '-')
+            {
+                // Skip the entire comment line, but don't go beyond 'end'
+                const char * comment_end = find_first_symbols<'\n'>(pos + 2, query_end);
+                if (comment_end == query_end)
+                    comment_end = query_end;
+                // Don't advance beyond the position we're checking
+                if (comment_end > end)
+                    comment_end = end;
+                pos = comment_end;
+            }
+            else
+            {
+                // Found non-comment, non-whitespace content - this is query content
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
 
 TestHint::TestHint(const std::string_view & query)
@@ -189,17 +227,9 @@ TestHint::TestHint(const std::string_view & query)
             if (comment_pos == std::string_view::npos)
                 continue;
 
-            // Check if there's any non-whitespace before this comment
-            bool is_leading = true;
-            for (size_t j = 0; j < comment_pos; ++j)
-            {
-                char c = query[j];
-                if (c != ' ' && c != '\t' && c != '\n' && c != '\r')
-                {
-                    is_leading = false;
-                    break;
-                }
-            }
+            // Check if there's any actual query content (non-comment, non-whitespace) before this comment
+            // Comments themselves should be considered as "leading" if they come before the query
+            bool is_leading = !hasQueryContentBefore(query, comment_pos);
 
             size_t pos_start = comment.find('{', 0);
             if (pos_start != String::npos)

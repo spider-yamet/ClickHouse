@@ -17,6 +17,8 @@
 #include <Parsers/Kusto/Utilities.h>
 #include <Parsers/ParserSetQuery.h>
 #include <Common/Exception.h>
+#include <Common/logger_useful.h>
+#include <base/EnumReflection.h>
 #include <boost/lexical_cast.hpp>
 
 #include <algorithm>
@@ -55,17 +57,20 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     String origal_expr;
     if (peek_pos.isValid() && peek_pos->type != TokenType::Comma && peek_pos->type != TokenType::ClosingRoundBracket)
         origal_expr = String(peek_pos->begin, peek_pos->end);
+    LOG_DEBUG(getLogger("KQLGeneralFunctions"), "Bin::convertImpl - origal_expr: '{}' (peek_pos valid: {}, type: {})", origal_expr, peek_pos.isValid(), peek_pos.isValid() ? magic_enum::enum_name(peek_pos->type) : "INVALID");
 
     // Advance past the opening bracket to the first argument
     ++pos;
-
 
     // getConvertedArgument handles argument processing and advances pos to the comma/closing bracket
     String value = getConvertedArgument(fn_name, pos);
 
     // Validate that the first argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (value.empty())
+    {
+        LOG_DEBUG(getLogger("KQLGeneralFunctions"), "Bin::convertImpl - empty logic: '{}' (empty: {})", value, value.empty());
         throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The first argument of `{}` should be valid argument.", fn_name);
+    }
 
     ++pos;
 
@@ -131,10 +136,13 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         origal_expr = String(pos->begin, pos->end);
 
     String first_arg = getConvertedArgument(fn_name, pos);
+    LOG_DEBUG(getLogger("KQLGeneralFunctions"), "BinAt::convertImpl - first_arg: '{}' (empty: {})", first_arg, first_arg.empty());
 
     // Validate that the first argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
-    if (first_arg.empty())
+    if (first_arg.empty()) {
+        LOG_DEBUG(getLogger("KQLGeneralFunctions"), "BinAt::convertImpl - empty logic: '{}' (empty: {})", first_arg, first_arg.empty());
         throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The first argument of `{}` should be valid argument.", fn_name);
+    }
 
     ++pos;
     // Check if second argument is empty

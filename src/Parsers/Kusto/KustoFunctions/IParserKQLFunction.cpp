@@ -6,7 +6,7 @@
 #include <base/EnumReflection.h>
 #include <pcg_random.hpp>
 #include <Poco/String.h>
-
+#include <Common/logger_useful.h>
 #include <numeric>
 #include <stack>
 
@@ -154,6 +154,7 @@ String IParserKQLFunction::getConvertedArgument(const String & fn_name, IParser:
         ++peek_pos;
         if (peek_pos.isValid() && (peek_pos->type == TokenType::Comma || peek_pos->type == TokenType::ClosingRoundBracket))
         {
+            LOG_DEBUG(getLogger("IParserKQLFunction"), "getConvertedArgument - empty argument detected: '{}' (empty: {})", peek_pos->begin, peek_pos->end);
             // Empty argument detected - advance pos past opening bracket and return empty
             ++pos;
             return {};
@@ -163,6 +164,7 @@ String IParserKQLFunction::getConvertedArgument(const String & fn_name, IParser:
     // Check for empty argument (comma or closing bracket immediately)
     if (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket || pos->type == TokenType::ClosingSquareBracket)
     {
+        LOG_DEBUG(getLogger("IParserKQLFunction"), "getConvertedArgument - Check for empty argument: '{}' (empty: {})", pos->begin, pos->end);
         return {};
     }
 
