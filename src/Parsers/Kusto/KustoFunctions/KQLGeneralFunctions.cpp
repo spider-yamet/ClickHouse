@@ -46,21 +46,22 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     if (!pos.isValid() || pos->type != TokenType::OpeningRoundBracket)
         return false;
 
+    // Advance past the opening bracket to the first argument
+    ++pos;
+
     // Check if first argument is empty (comma or closing bracket immediately after opening bracket)
-    IParser::Pos peek_pos = pos;
-    ++peek_pos;
-    // Validate empty argument BEFORE calling getConvertedArgument
-    if (peek_pos.isValid() && (peek_pos->type == TokenType::Comma || peek_pos->type == TokenType::ClosingRoundBracket))
+    // This MUST be checked before calling getConvertedArgument to catch empty arguments early
+    if (pos.isValid() && (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket))
+    {
+        LOG_DEBUG(getLogger("KQLGeneralFunctions"), "Bin::convertImpl - Empty first argument detected early (type: {})", pos.isValid() ? magic_enum::enum_name(pos->type) : "INVALID");
         throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The first argument of `{}` should be valid argument.", fn_name);
+    }
 
     // Capture the first token for type checking (before getConvertedArgument advances pos)
     String origal_expr;
-    if (peek_pos.isValid() && peek_pos->type != TokenType::Comma && peek_pos->type != TokenType::ClosingRoundBracket)
-        origal_expr = String(peek_pos->begin, peek_pos->end);
-    LOG_DEBUG(getLogger("KQLGeneralFunctions"), "Bin::convertImpl - origal_expr: '{}' (peek_pos valid: {}, type: {})", origal_expr, peek_pos.isValid(), peek_pos.isValid() ? magic_enum::enum_name(peek_pos->type) : "INVALID");
-
-    // Advance past the opening bracket to the first argument
-    ++pos;
+    if (pos.isValid() && pos->type != TokenType::Comma && pos->type != TokenType::ClosingRoundBracket)
+        origal_expr = String(pos->begin, pos->end);
+    LOG_DEBUG(getLogger("KQLGeneralFunctions"), "Bin::convertImpl - origal_expr: '{}' (pos valid: {}, type: {})", origal_expr, pos.isValid(), pos.isValid() ? magic_enum::enum_name(pos->type) : "INVALID");
 
     // getConvertedArgument handles argument processing and advances pos to the comma/closing bracket
     String value = getConvertedArgument(fn_name, pos);
