@@ -37,17 +37,23 @@ namespace DB
 
 bool Bin::convertImpl(String & out, IParser::Pos & pos)
 {
+    LOG_DEBUG(getLogger("KQLGeneralFunctions"), "Bin::convertImpl - ENTRY");
     double bin_size;
     const String fn_name = getKQLFunctionName(pos);
+    LOG_DEBUG(getLogger("KQLGeneralFunctions"), "Bin::convertImpl - fn_name: '{}'", fn_name);
     if (fn_name.empty())
         return false;
 
     // getKQLFunctionName() already advanced pos to the opening bracket '('
     if (!pos.isValid() || pos->type != TokenType::OpeningRoundBracket)
+    {
+        LOG_DEBUG(getLogger("KQLGeneralFunctions"), "Bin::convertImpl - Invalid pos or not opening bracket");
         return false;
+    }
 
     // Advance past the opening bracket to the first argument
     ++pos;
+    LOG_DEBUG(getLogger("KQLGeneralFunctions"), "Bin::convertImpl - After ++pos, type: {}", pos.isValid() ? magic_enum::enum_name(pos->type) : "INVALID");
 
     // Check if first argument is empty (comma or closing bracket immediately after opening bracket)
     // This MUST be checked before calling getConvertedArgument to catch empty arguments early
