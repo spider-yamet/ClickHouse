@@ -37,29 +37,23 @@ namespace DB
 
 bool Bin::convertImpl(String & out, IParser::Pos & pos)
 {
-    LOG_INFO(getLogger("KQLGeneralFunctions"), "Bin::convertImpl - ENTRY");
     double bin_size;
     const String fn_name = getKQLFunctionName(pos);
-    LOG_INFO(getLogger("KQLGeneralFunctions"), "Bin::convertImpl - fn_name: '{}'", fn_name);
     if (fn_name.empty())
         return false;
 
     // getKQLFunctionName() already advanced pos to the opening bracket '('
     if (!pos.isValid() || pos->type != TokenType::OpeningRoundBracket)
     {
-        LOG_INFO(getLogger("KQLGeneralFunctions"), "Bin::convertImpl - Invalid pos or not opening bracket");
         return false;
     }
 
     // Advance past the opening bracket to the first argument
     ++pos;
-    LOG_INFO(getLogger("KQLGeneralFunctions"), "Bin::convertImpl - After ++pos, type: {}", pos.isValid() ? magic_enum::enum_name(pos->type) : "INVALID");
 
     // Check if first argument is empty (comma or closing bracket immediately after opening bracket)
-    // This MUST be checked before calling getConvertedArgument to catch empty arguments early
     if (pos.isValid() && (pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket))
     {
-        LOG_INFO(getLogger("KQLGeneralFunctions"), "Bin::convertImpl - Empty first argument detected early (type: {})", pos.isValid() ? magic_enum::enum_name(pos->type) : "INVALID");
         throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The first argument of `{}` should be valid argument.", fn_name);
     }
 
@@ -67,7 +61,6 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     String origal_expr;
     if (pos.isValid() && pos->type != TokenType::Comma && pos->type != TokenType::ClosingRoundBracket)
         origal_expr = String(pos->begin, pos->end);
-    LOG_INFO(getLogger("KQLGeneralFunctions"), "Bin::convertImpl - origal_expr: '{}' (pos valid: {}, type: {})", origal_expr, pos.isValid(), pos.isValid() ? magic_enum::enum_name(pos->type) : "INVALID");
 
     // getConvertedArgument handles argument processing and advances pos to the comma/closing bracket
     String value = getConvertedArgument(fn_name, pos);
@@ -75,7 +68,6 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     // Validate that the first argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (value.empty())
     {
-        LOG_INFO(getLogger("KQLGeneralFunctions"), "Bin::convertImpl - empty logic: '{}' (empty: {})", value, value.empty());
         throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The first argument of `{}` should be valid argument.", fn_name);
     }
 
@@ -143,11 +135,9 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         origal_expr = String(pos->begin, pos->end);
 
     String first_arg = getConvertedArgument(fn_name, pos);
-    LOG_INFO(getLogger("KQLGeneralFunctions"), "BinAt::convertImpl - first_arg: '{}' (empty: {})", first_arg, first_arg.empty());
 
     // Validate that the first argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (first_arg.empty()) {
-        LOG_INFO(getLogger("KQLGeneralFunctions"), "BinAt::convertImpl - empty logic: '{}' (empty: {})", first_arg, first_arg.empty());
         throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The first argument of `{}` should be valid argument.", fn_name);
     }
 
