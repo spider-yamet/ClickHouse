@@ -25,9 +25,7 @@
 
 namespace DB::ErrorCodes
 {
-extern const int BAD_ARGUMENTS;
 extern const int SYNTAX_ERROR;
-extern const int NUMBER_OF_ARGUMENTS_DOESNT_MATCH;
 }
 
 namespace DB
