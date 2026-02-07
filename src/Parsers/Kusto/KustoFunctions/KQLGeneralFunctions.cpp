@@ -40,16 +40,14 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     if (fn_name.empty())
         return false;
 
-    // getKQLFunctionName() already advanced pos to the opening bracket '('
     if (!pos.isValid() || pos->type != TokenType::OpeningRoundBracket)
         return false;
 
-    // Check if first argument is empty (comma or closing bracket immediately after opening bracket)
     IParser::Pos peek_pos = pos;
     ++peek_pos;
     // Validate empty argument BEFORE calling getConvertedArgument
-    if (peek_pos.isValid() && (peek_pos->type == TokenType::Comma || peek_pos->type == TokenType::ClosingRoundBracket))
-        throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The first argument of `{}` should be valid argument.", fn_name);
+    if (peek_pos->type == TokenType::Comma || peek_pos->type == TokenType::ClosingRoundBracket)
+        return false;
 
     // Capture the first token for type checking (before getConvertedArgument advances pos)
     String origal_expr;
@@ -65,7 +63,7 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
 
     // Validate that the first argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (value.empty())
-        throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The first argument of `{}` should be valid argument.", fn_name);
+        return false;
 
     ++pos;
 
@@ -73,7 +71,7 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
 
     // Validate that the second argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (round_to.empty())
-        throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The second argument of `{}` should be valid argument.", fn_name);
+        return false;
 
     //remove space between minus and number
     round_to.erase(std::remove_if(round_to.begin(), round_to.end(), isspace), round_to.end());
@@ -86,12 +84,12 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
     }
     catch (const std::exception &)
     {
-        throw Exception(ErrorCodes::BAD_ARGUMENTS, "The second argument of `{}` should be a valid number.", fn_name);
+        return false;
     }
 
     // validate if bin_size is a positive number
     if (bin_size <= 0)
-        throw Exception(ErrorCodes::BAD_ARGUMENTS, "The second argument of `{}` should be a positive number.", fn_name);
+        return false;
 
     if (origal_expr == "datetime" || origal_expr == "date")
     {
@@ -134,34 +132,34 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
 
     // Validate that the first argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (first_arg.empty())
-        throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The first argument of `{}` should be valid argument.", fn_name);
+        return false;
 
     ++pos;
     // Check if second argument is empty
     if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
-        throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The second argument of `{}` shouldn't be empty.", fn_name);
+        return false;
 
     String second_arg = getConvertedArgument(fn_name, pos);
 
     // Validate that the second argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (second_arg.empty())
-        throw Exception(ErrorCodes::NUMBER_OF_ARGUMENTS_DOESNT_MATCH, "The second argument of `{}` shouldn't be empty.", fn_name);
+        return false;
 
     ++pos;
     // Check if third argument is empty
     if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
-        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
+        return false;
 
     String third_arg = getConvertedArgument(fn_name, pos);
 
     // Validate that the third argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
     if (third_arg.empty())
-        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty bin size argument", fn_name);
+        return false;
 
     // Determine if this is 3-arg or 4-arg form
     // getConvertedArgument() leaves pos at the comma (if 4-arg) or closing bracket (if 3-arg)
     if (!pos.isValid())
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a valid argument structure", fn_name);
+        return false;
 
     String expression_str;
     String bin_size_str;
@@ -179,11 +177,11 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
         ++pos; // Skip the comma
         // Check pos.isValid() first before accessing pos->type
         if (!pos.isValid() || pos->type == TokenType::Comma || pos->type == TokenType::ClosingRoundBracket)
-            throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty fixed point argument", fn_name);
+            return false;
 
         String fourth_arg = getConvertedArgument(fn_name, pos);
         if (fourth_arg.empty())
-            throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a non-empty fixed point argument", fn_name);
+            return false;
 
         expression_str = second_arg;
         bin_size_str = third_arg;
@@ -191,7 +189,7 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
     }
     else
     {
-        throw Exception(ErrorCodes::SYNTAX_ERROR, "Function {} requires a valid argument structure", fn_name);
+        return false;
     }
 
     auto t1 = fmt::format("toFloat64({})", fixed_point_str);
@@ -204,12 +202,12 @@ bool BinAt::convertImpl(String & out, IParser::Pos & pos)
     }
     catch (const std::exception &)
     {
-        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a valid numeric bin size argument", fn_name);
+        return false;
     }
 
     // validate if bin_size is a positive number
     if (bin_size <= 0)
-        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a positive bin size argument", fn_name);
+        return false;
 
     if (origal_expr == "datetime" || origal_expr == "date")
     {
