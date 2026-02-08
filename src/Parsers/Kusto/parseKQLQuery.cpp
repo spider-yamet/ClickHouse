@@ -346,7 +346,23 @@ ASTPtr tryParseKQLQuery(
 
     Expected expected;
     ASTPtr res;
-    const bool parse_res = parser.parse(token_iterator, res, expected);
+    bool parse_res = false;
+    try
+    {
+        parse_res = parser.parse(token_iterator, res, expected);
+    }
+    catch (const Exception & e)
+    {
+        out_error_message = e.message();
+        _out_query_end = token_iterator->begin;
+        return nullptr;
+    }
+    catch (const std::exception & e)
+    {
+        out_error_message = e.what();
+        _out_query_end = token_iterator->begin;
+        return nullptr;
+    }
     const auto last_token = token_iterator.max();
     _out_query_end = last_token.end;
 
