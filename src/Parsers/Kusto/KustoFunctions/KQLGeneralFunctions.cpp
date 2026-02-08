@@ -43,8 +43,8 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
 
     IParser::Pos peek_pos = pos;
     ++peek_pos;
-    // Validate empty argument BEFORE calling getConvertedArgument
-    if (peek_pos->type == TokenType::Comma || peek_pos->type == TokenType::ClosingRoundBracket)
+    // Allow empty first argument (server will handle it), but reject empty call.
+    if (peek_pos->type == TokenType::ClosingRoundBracket)
         return false;
 
     // Capture the first token for type checking (before getConvertedArgument advances pos)
@@ -58,10 +58,6 @@ bool Bin::convertImpl(String & out, IParser::Pos & pos)
 
     // getConvertedArgument handles argument processing and advances pos to the comma/closing bracket
     String value = getConvertedArgument(fn_name, pos);
-
-    // Validate that the first argument is not empty (getConvertedArgument returns empty string for comma/closing bracket)
-    if (value.empty())
-        return false;
 
     ++pos;
 
