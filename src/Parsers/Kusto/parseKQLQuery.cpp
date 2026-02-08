@@ -320,9 +320,13 @@ ASTPtr tryParseKQLQuery(
     size_t max_query_size,
     size_t max_parser_depth,
     size_t max_parser_backtracks,
-    bool skip_insignificant)
+    bool skip_insignificant,
+    int * out_error_code)
 {
     const char * query_begin = _out_query_end;
+
+    if (out_error_code)
+        *out_error_code = ErrorCodes::SYNTAX_ERROR;
 
     Tokens tokens(query_begin, all_queries_end, max_query_size, skip_insignificant);
     /// NOTE: consider use UInt32 for max_parser_depth setting.
@@ -355,12 +359,16 @@ ASTPtr tryParseKQLQuery(
     {
         out_error_message = e.message();
         _out_query_end = token_iterator->begin;
+        if (out_error_code)
+            *out_error_code = e.code();
         return nullptr;
     }
     catch (const std::exception & e)
     {
         out_error_message = e.what();
         _out_query_end = token_iterator->begin;
+        if (out_error_code)
+            *out_error_code = ErrorCodes::SYNTAX_ERROR;
         return nullptr;
     }
     const auto last_token = token_iterator.max();
@@ -460,12 +468,25 @@ ASTPtr parseKQLQueryAndMovePosition(
     size_t max_parser_backtracks)
 {
     std::string error_message;
-    ASTPtr res = tryParseKQLQuery(parser, pos, end, error_message, false, query_description, allow_multi_statements, max_query_size, max_parser_depth, max_parser_backtracks);
+    int error_code = ErrorCodes::SYNTAX_ERROR;
+    ASTPtr res = tryParseKQLQuery(
+        parser,
+        pos,
+        end,
+        error_message,
+        false,
+        query_description,
+        allow_multi_statements,
+        max_query_size,
+        max_parser_depth,
+        max_parser_backtracks,
+        true,
+        &error_code);
 
     if (res)
         return res;
 
-    throw Exception::createDeprecated(error_message, ErrorCodes::SYNTAX_ERROR);
+    throw Exception::createDeprecated(error_message, error_code);
 }
 
 ASTPtr parseKQLQuery(

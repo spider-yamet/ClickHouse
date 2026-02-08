@@ -25,7 +25,8 @@ ASTPtr tryParseKQLQuery(
     size_t max_query_size,
     size_t max_parser_depth,
     size_t max_parser_backtracks,
-    bool skip_insignificant = true);
+    bool skip_insignificant = true,
+    int * out_error_code = nullptr);
 
 
 /// Parse query or throw an exception with error message.
