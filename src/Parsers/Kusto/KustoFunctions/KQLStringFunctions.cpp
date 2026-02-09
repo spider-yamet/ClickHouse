@@ -128,7 +128,7 @@ bool Extract::convertImpl(String & out, IParser::Pos & pos)
     ++pos;
     String capture_group_str = getConvertedArgument(fn_name, pos);
     if (capture_group_str.empty())
-        throw Exception(ErrorCodes::BAD_ARGUMENTS, "Function {} requires a non-empty capture group argument", fn_name);
+        return false;
     size_t capture_group = stoi(capture_group_str);
 
     ++pos;
