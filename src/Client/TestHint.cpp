@@ -26,8 +26,6 @@ namespace DB
 namespace
 {
     /// Check if query looks like KQL by checking for KQL-specific keywords
-    /// Note: We only check for keywords that are unique to KQL or very KQL-specific,
-    /// not common SQL keywords like "where", "order", "limit" that appear in both.
     bool isKQLQuery(const std::string_view & query)
     {
         static const std::vector<std::string_view> kql_keywords = {
@@ -94,7 +92,6 @@ namespace
                 }
             }
         }
-
         return false;
     }
 
@@ -115,11 +112,8 @@ namespace
             {
                 const char * comment_start = pos;
                 pos += 2;
-
                 while (pos < end && (*pos == ' ' || *pos == '\t'))
                     ++pos;
-
-                // Find end of line
                 const char * comment_end = find_first_symbols<'\n'>(pos, end);
                 if (comment_end == end)
                     comment_end = end;
@@ -141,11 +135,9 @@ namespace
 TestHint::TestHint(const std::string_view & query)
 {
     // Don't parse error hints in leading comments, because it feels weird.
-    // Leading 'echo' hint is OK.
     bool is_leading_hint = true;
 
     // Original Lexer-based approach - this must run first and completely
-    // to preserve existing behavior for all current tests
     Lexer lexer(query.data(), query.data() + query.size());
 
     for (Token token = lexer.nextToken(); !token.isEnd(); token = lexer.nextToken())
@@ -176,7 +168,6 @@ TestHint::TestHint(const std::string_view & query)
     }
 
     // KQL fallback: Always try string-based extraction for KQL queries
-    // because Lexer might fail on malformed queries before reaching comments
     if (isKQLQuery(query))
     {
         std::vector<String> comments;
@@ -184,12 +175,10 @@ TestHint::TestHint(const std::string_view & query)
 
         for (const auto & comment : comments)
         {
-            // Find where this comment starts in the original query
             size_t comment_pos = query.find(comment);
             if (comment_pos == std::string_view::npos)
                 continue;
 
-            // Check if there's any non-whitespace before this comment
             bool is_leading = true;
             for (size_t j = 0; j < comment_pos; ++j)
             {
