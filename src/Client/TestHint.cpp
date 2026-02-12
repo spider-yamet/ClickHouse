@@ -1,16 +1,11 @@
 #include <charconv>
 #include <string_view>
-#include <algorithm>
-#include <cctype>
-#include <iterator>
-#include <vector>
 
 #include <Client/TestHint.h>
 
 #include <Parsers/Lexer.h>
 #include <Common/ErrorCodes.h>
 #include <Common/Exception.h>
-#include <base/find_symbols.h>
 
 #include <fmt/ranges.h>
 
@@ -23,121 +18,12 @@ namespace DB::ErrorCodes
 namespace DB
 {
 
-namespace
-{
-    /// Check if query looks like KQL by checking for KQL-specific keywords
-    bool isKQLQuery(const std::string_view & query)
-    {
-        static const std::vector<std::string_view> kql_keywords = {
-            "print", "project", "extend", "summarize", "take", "make-series", "render"
-        };
-
-        String query_lower;
-        query_lower.reserve(query.size());
-        std::transform(query.begin(), query.end(), std::back_inserter(query_lower),
-                       [](char c) { return std::tolower(static_cast<unsigned char>(c)); });
-
-        for (const auto & keyword : kql_keywords)
-        {
-            size_t pos = query_lower.find(keyword);
-            if (pos != String::npos)
-            {
-                if ((pos == 0 || !std::isalnum(static_cast<unsigned char>(query_lower[pos - 1]))) &&
-                    (pos + keyword.size() >= query_lower.size() ||
-                     !std::isalnum(static_cast<unsigned char>(query_lower[pos + keyword.size()]))))
-                {
-                    return true;
-                }
-            }
-        }
-
-        // Check for functions that are truly unique to KQL
-        static const std::vector<std::string_view> kql_unique_functions = {
-            "bin", "bin_at", "ago", "now", "datetime_diff", "parse_json"
-        };
-
-        for (const auto & func : kql_unique_functions)
-        {
-            String func_with_paren = String(func) + "(";
-            size_t pos = query_lower.find(func_with_paren);
-            if (pos != String::npos)
-            {
-                if (pos == 0 || !std::isalnum(static_cast<unsigned char>(query_lower[pos - 1])))
-                {
-                    return true;
-                }
-            }
-        }
-
-        // Special handling for "extract" - it exists in both SQL and KQL
-        {
-            String extract_with_paren = "extract(";
-            size_t pos = query_lower.find(extract_with_paren);
-            if (pos != String::npos)
-            {
-                if (pos == 0 || !std::isalnum(static_cast<unsigned char>(query_lower[pos - 1])))
-                {
-                    size_t after_paren = pos + extract_with_paren.size();
-                    if (after_paren < query.size())
-                    {
-                        while (after_paren < query.size() &&
-                               (query[after_paren] == ' ' || query[after_paren] == '\t'))
-                            ++after_paren;
-                        if (after_paren < query.size() &&
-                            (query[after_paren] == '\'' || query[after_paren] == '"'))
-                        {
-                            return true;  // KQL extract with regex pattern
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    /// Extract comments from query string using simple string search (fallback for malformed queries)
-    void extractCommentsFromString(const std::string_view & query, std::vector<String> & comments)
-    {
-        const char * pos = query.data();
-        const char * end = query.data() + query.size();
-
-        while (pos < end)
-        {
-            // Look for -- comment
-            pos = find_first_symbols<'-'>(pos, end);
-            if (pos >= end)
-                break;
-
-            if (pos + 1 < end && pos[0] == '-' && pos[1] == '-')
-            {
-                const char * comment_start = pos;
-                pos += 2;
-                while (pos < end && (*pos == ' ' || *pos == '\t'))
-                    ++pos;
-                const char * comment_end = find_first_symbols<'\n'>(pos, end);
-                if (comment_end == end)
-                    comment_end = end;
-
-                String comment(comment_start, comment_end - comment_start);
-                if (!comment.empty())
-                    comments.push_back(comment);
-
-                pos = comment_end;
-            }
-            else
-            {
-                ++pos;
-            }
-        }
-    }
-}
-
 TestHint::TestHint(const std::string_view & query)
 {
     // Don't parse error hints in leading comments, because it feels weird.
+    // Leading 'echo' hint is OK.
     bool is_leading_hint = true;
 
-    // Original Lexer-based approach - this must run first and completely
     Lexer lexer(query.data(), query.data() + query.size());
 
     for (Token token = lexer.nextToken(); !token.isEnd(); token = lexer.nextToken())
@@ -162,42 +48,6 @@ TestHint::TestHint(const std::string_view & query)
                         Lexer comment_lexer(comment.c_str() + pos_start + 1, comment.c_str() + pos_end, 0);
                         parse(comment_lexer, is_leading_hint);
                     }
-                }
-            }
-        }
-    }
-
-    // KQL fallback: Always try string-based extraction for KQL queries
-    if (isKQLQuery(query))
-    {
-        std::vector<String> comments;
-        extractCommentsFromString(query, comments);
-
-        for (const auto & comment : comments)
-        {
-            size_t comment_pos = query.find(comment);
-            if (comment_pos == std::string_view::npos)
-                continue;
-
-            bool is_leading = true;
-            for (size_t j = 0; j < comment_pos; ++j)
-            {
-                char c = query[j];
-                if (c != ' ' && c != '\t' && c != '\n' && c != '\r')
-                {
-                    is_leading = false;
-                    break;
-                }
-            }
-
-            size_t pos_start = comment.find('{', 0);
-            if (pos_start != String::npos)
-            {
-                size_t pos_end = comment.find('}', pos_start);
-                if (pos_end != String::npos)
-                {
-                    Lexer comment_lexer(comment.c_str() + pos_start + 1, comment.c_str() + pos_end, 0);
-                    parse(comment_lexer, is_leading);
                 }
             }
         }
