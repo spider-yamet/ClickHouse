@@ -914,6 +914,7 @@ void addWithFillStepIfNeeded(QueryPlan & query_plan,
         return;
 
     InterpolateDescriptionPtr interpolate_description;
+    const auto & projection_nodes = query_node.getProjection().getNodes();
 
     if (query_node.hasInterpolate())
     {
@@ -986,6 +987,80 @@ void addWithFillStepIfNeeded(QueryPlan & query_plan,
 
         Aliases empty_aliases;
         interpolate_description = std::make_shared<InterpolateDescription>(std::move(interpolate_actions_dag), empty_aliases);
+    }
+    else
+    {
+        NameSet fill_column_names;
+        for (const auto & fill_column : fill_description)
+            fill_column_names.insert(fill_column.column_name);
+
+        ActionsDAG interpolate_actions_dag;
+        auto query_plan_columns = query_plan.getCurrentHeader()->getColumnsWithTypeAndName();
+        for (auto & query_plan_column : query_plan_columns)
+        {
+            /// INTERPOLATE actions dag input columns must be non constant
+            query_plan_column.column = nullptr;
+            interpolate_actions_dag.addInput(query_plan_column);
+        }
+
+        ColumnNodePtrWithHashSet empty_correlated_columns_set;
+        PlannerActionsVisitor planner_actions_visitor(planner_context, empty_correlated_columns_set);
+        NameSet interpolate_output_names;
+
+        for (const auto & projection_node : projection_nodes)
+        {
+            auto projection_identifiers = collectIdentifiersFullNames(projection_node);
+            if (projection_identifiers.empty())
+                continue;
+
+            bool depends_only_on_fill_columns = true;
+            for (const auto & identifier : projection_identifiers)
+            {
+                if (!fill_column_names.contains(identifier))
+                {
+                    depends_only_on_fill_columns = false;
+                    break;
+                }
+            }
+
+            if (!depends_only_on_fill_columns)
+                continue;
+
+            auto projection_name = calculateActionNodeName(projection_node, planner_context);
+            if (fill_column_names.contains(projection_name) || interpolate_output_names.contains(projection_name))
+                continue;
+
+            auto [projection_expression_nodes, projection_correlated_subtrees] =
+                planner_actions_visitor.visit(interpolate_actions_dag, projection_node);
+            projection_correlated_subtrees.assertEmpty("in implicit interpolate expression");
+            if (projection_expression_nodes.size() != 1)
+                throw Exception(ErrorCodes::BAD_ARGUMENTS, "Implicit interpolate expression expected to have single action node");
+
+            const auto * projection_expression = projection_expression_nodes[0];
+
+            const auto * header_column = query_plan.getCurrentHeader()->findByName(projection_name);
+            if (!header_column)
+                continue;
+
+            if (!projection_expression->result_type->equals(*header_column->type))
+            {
+                projection_expression = &interpolate_actions_dag.addCast(
+                    *projection_expression,
+                    header_column->type,
+                    projection_expression->result_name,
+                    planner_context->getQueryContext());
+            }
+
+            const auto * alias_node = &interpolate_actions_dag.addAlias(*projection_expression, projection_name);
+            interpolate_actions_dag.getOutputs().push_back(alias_node);
+            interpolate_output_names.insert(projection_name);
+        }
+
+        if (!interpolate_actions_dag.getOutputs().empty())
+        {
+            Aliases empty_aliases;
+            interpolate_description = std::make_shared<InterpolateDescription>(std::move(interpolate_actions_dag), empty_aliases);
+        }
     }
 
     const auto & query_context = planner_context->getQueryContext();
